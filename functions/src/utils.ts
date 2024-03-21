@@ -9,7 +9,7 @@ const cors: (handler: HttpsHandler) => HttpsHandler =
   (handler) => (req, res) => {
     const allowedOrigins = IS_DEV
       ? ["http://127.0.0.1:3000", "http://localhost:3000"]
-      : ["https://www.tier-survey.xyz/"];
+      : ["https://www.tier-survey.xyz"];
 
     if (!req.headers.origin) {
       res.status(400).send("Cannot recognize origin");
