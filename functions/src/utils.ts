@@ -39,3 +39,9 @@ export const paramCheck = (keys: string | string[], params: Object) => {
 
   return keys.every(_key => _key in params);
 }
+
+export function toCamelCase(str: string) {
+  return str
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
+}
