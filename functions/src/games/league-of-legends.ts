@@ -4,12 +4,12 @@ import { onCustomRequest, paramCheck } from "../utils";
 export const createSurvey = onCustomRequest(async (req, res) => {
   const params = req.query;
 
-  if (!paramCheck(["limitMinute", "keyword", "hashedId"], params)) {
+  if (!paramCheck(["limitMinute", "password", "hashedId"], params)) {
     res.status(400).send("Wrong parameter");
     return;
   }
 
-  const { keyword, limitMinute, hashedId } = params;
+  const { password, limitMinute, hashedId } = params;
 
   // TODO catch - if no hashed Id from firestore users -> return error
   
@@ -18,9 +18,8 @@ export const createSurvey = onCustomRequest(async (req, res) => {
     return;
   }
 
-  const result = await store.setSurvey(hashedId, {
-    game: 'league of legends',
-    keyword: keyword as string,
+  const result = await store.setSurvey(hashedId, 'league of legends', {
+    password: password as string,
     limitMinute: Number(limitMinute),
     endTime: Date.now() + Number(limitMinute) * 60 * 1000
   });
@@ -34,10 +33,14 @@ export const createSurvey = onCustomRequest(async (req, res) => {
 });
 
 
+type SurveyClient = {
+  limitMinute: number;
+  endTime: number;
+};
 type CheckSurveyResponse = {
   status: "open" | "closed" | "undefined",
-  data: FS_Survey | undefined;
-}
+  data: SurveyClient | undefined;
+};
 
 export const checkSurvey = onCustomRequest(async (req, res) => {
   const params = req.query;
@@ -58,7 +61,10 @@ export const checkSurvey = onCustomRequest(async (req, res) => {
   if (data) {
     if (data.endTime > Date.now()) {
       resData.status = "open";
-      resData.data = data;
+      resData.data = {
+        limitMinute: data.limitMinute,
+        endTime: data.endTime,
+      };
     } else {
       resData.status = "closed";
     }

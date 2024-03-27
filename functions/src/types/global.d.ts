@@ -5,7 +5,8 @@ type SupportGame = "league of legends" | "teamfight tactics" | "valorant";
 type RSOHashedId = string;
 
 
-// # league of legends
+// game types
+// 1. league of legends types
 type LeagueOfLegendsChampionId = string;
 /** tier + rank를 합친 정수 값 */
 type LeagueOfLegendsChampionTierNumeric = number;
@@ -26,9 +27,14 @@ type LeagueOfLegendsTier =
   | "BRONZE" // 5
   | "IRON"; // 1
 
+
+
+// firestore types
+type SupportCollectionType = "users" | "survey" | "stat" | "chart" | "player-table";
 /**
  * ## user
- * - id: {@link RSOHashedId}
+ * - collection: {@link SupportGame}-users
+ * - id: {@link RSOHashedId | }
  * - desc: RSO 후 저장되는 유저 정보
  */
 type FS_RSOUser = {
@@ -44,20 +50,21 @@ type FS_RSOUser = {
 
 /**
  * ## survey
- * - id: {@link RSOHashedId}
+ * - collection: {@link SupportGame}-survey
+ * - id: {@link RSOHashedId | }
  * - desc: 열린 설문조사 정보를 담는 collection
  *  RSO계열 아이디 혹은 다른 게임들의 id를 기준으로 설문조사를 만듬 (동시에 여러 설문 조사가 가능하도록)
  */
 type FS_Survey = {
-  game: SupportGame;
-  keyword: string;
+  password: string;
   limitMinute: number;
   endTime: number;
 };
 
 /**
  * ## league of legends stat
- * - id: {@link RSOHashedId}
+ * - collection: {@link SupportGame}-stat
+ * - id: {@link RSOHashedId | }
  * - desc: 유저가 권한을 승인함으로써 내놓은 정보들
  *  여기에 모두 저장완료하면 chart, player-table(티어 기준으로)에 저장
  */
@@ -71,7 +78,8 @@ type FS_LeagueOfLegendsStat = {
 
 /**
  * ## league of legends chart
- * - id: {@link RSOHashedId}
+ * - collection: {@link SupportGame}-chart
+ * - id: {@link RSOHashedId | }
  * - desc: **종합한 정보들**을 기록한 데이터
  */
 type FS_LeagueOfLegendsChart = {
@@ -84,7 +92,8 @@ type FS_LeagueOfLegendsChart = {
 
 /**
  * ## league of legends player table
- * - id: {@link RSOHashedId}
+ * - collection: {@link SupportGame}-player-table
+ * - id: {@link RSOHashedId | }
  * - desc: 티어순으로 저장하는 유저 테이블, row는 {@link FS_LeagueOfLegendsStat}.
  *  최대 100명까지 저장
  *  firestore에 있는 함수, query의 orderBy, startAt, in연산자를 이용해 조회

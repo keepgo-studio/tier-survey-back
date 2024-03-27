@@ -45,3 +45,7 @@ export function toCamelCase(str: string) {
     .toLowerCase()
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
 }
+
+export function generateCollectionUrl(game: SupportGame, collectionType: SupportCollectionType) {
+  return `${toCamelCase(game)}-${collectionType}`;
+}

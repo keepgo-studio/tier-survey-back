@@ -1,5 +1,5 @@
 import { getFirestore } from "firebase-admin/firestore";
-import { toCamelCase } from "../utils";
+import { generateCollectionUrl } from "../utils";
 
 export class Store {
   private db;
@@ -15,9 +15,9 @@ export class Store {
   //   }
   // }
 
-  async setSurvey(hashedId: string, param: FS_Survey) {
+  async setSurvey(hashedId: string, game: SupportGame, param: FS_Survey) {
     const surveyRef = this.db
-      .collection(`${toCamelCase(param.game)}-survey`)
+      .collection(generateCollectionUrl(game, "survey"))
       .doc(hashedId);
 
     try {
@@ -28,12 +28,9 @@ export class Store {
     }
   }
 
-  async getSurvey(
-    hashedId: string,
-    game: SupportGame
-  ): Promise<FS_Survey | undefined> {
+  async getSurvey(hashedId: string,game: SupportGame): Promise<FS_Survey | undefined> {
     const surveyRef = this.db
-      .collection(`${toCamelCase(game)}-survey`)
+      .collection(generateCollectionUrl(game, "survey"))
       .doc(hashedId as string);
 
     const doc = await surveyRef.get();
