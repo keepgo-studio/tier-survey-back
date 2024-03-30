@@ -40,19 +40,13 @@ type FS_SupportCollectionType = "users" | "survey" | "stat" | "chart" | "chart-r
  * - id: {@link NaverHashedId}
  * - desc: naver 로그인 후 저장되는 정보
  *  host든 participant든 naver Oauth후 모두 여기 먼저 등록됌
+ * 
+ * @deprecated
+ * 치지직 profile 정보를 받아오는 api가 뚫리지 않은 이상 의미가 없음(https://comm-api.game.naver.com/nng_main/v1/profile/)
  */
-type FS_User = {
-  "rso": {
-    // id: string;
-    // accountId: string;
-    // puuid: string;
-    // name: string;
-    // profileIconId: number;
-    // revisionDate: number;
-    // summonerLevel: number;
-    hashedId: RSOHashedId;
-  };
-}
+// type FS_User = {
+//   "rso": hashedId
+// }
 
 /**
  * ## survey
@@ -66,6 +60,24 @@ type FS_Survey = {
   password: string;
   limitMinute: number;
   endTime: number;
+};
+
+/**
+ * ## survey
+ * - collection: leagueOfLegends-user
+ * - id: {@link RSOHashedId}
+ * - desc: RSO 후 가장 먼저 등록되는 데이터
+ *  받아온 id 를 hashed하여 이를 collection의 primary key로 사용하였다.
+ */
+type FS_LeagueOfLegendsUser ={
+  // id: string;
+  // accountId: string;
+  // puuid: string;
+  // name: string;
+  // profileIconId: number;
+  // revisionDate: number;
+  // summonerLevel: number;
+  hashedId: RSOHashedId;
 };
 
 /**
