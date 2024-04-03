@@ -47,10 +47,6 @@ export function toCamelCase(str: string) {
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
 }
 
-export function generateCollectionUrl(game: SupportGame, collectionType: FS_SupportCollectionType) {
-  return `${toCamelCase(game)}-${collectionType}`;
-}
-
 export function getLeagueOfLegendsNumericTier(tier: LeagueOfLegendsTier, rank:LeagueOfLegendsRank) {
   let rankNumeric = 0;
 

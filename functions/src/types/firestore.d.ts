@@ -6,33 +6,8 @@ type NaverHashedId = string;
 type RSOHashedId = string;
 
 
-
-// game types
-// 1. league of legends types
-type LeagueOfLegendsChampionId = number;
-/** tier + rank를 합친 정수 값 */
-type LeagueOfLegendsChampionTierNumeric = number;
-type LeagueOfLegendsChampion = {
-  championId: LeagueOfLegendsChampionId;
-  championLevel: number;
-  championPoints: number;
-};
-type LeagueOfLegendsTier =
-  | "CHALLENGER"
-  | "GRANDMASTER"
-  | "MASTER"
-  | "DIAMOND"
-  | "EMERALD"
-  | "PLATINUM"
-  | "GOLD"
-  | "SILVER"
-  | "BRONZE"
-  | "IRON";
-type LeagueOfLegendsRank = "I" | "II" | "III" | "IV";
-
-
-// firestore types
 // FS_ prefix == FireStore
+// firestore collections - global
 type FS_SupportCollectionType = "users" | "survey" | "stat" | "chart" | "chart-ready" | "player-table";
 /**
  * ## user
@@ -46,6 +21,7 @@ type FS_SupportCollectionType = "users" | "survey" | "stat" | "chart" | "chart-r
  */
 type FS_User = {
   "rso": RSOHashedId
+  "naver": {}
 }
 
 /**
@@ -62,9 +38,11 @@ type FS_Survey = {
   endTime: number;
 };
 
+
+// firestore collections - league of legends related
 /**
- * ## survey
- * - collection: leagueOfLegends-user
+ * ## users
+ * - collection: leagueOfLegends-users
  * - id: {@link RSOHashedId}
  * - desc: RSO 후 가장 먼저 등록되는 데이터
  *  받아온 id 를 hashed하여 이를 collection의 primary key로 사용하였다.
@@ -131,9 +109,3 @@ type FS_LeagueOfLegendsChartReady = boolean;
 type FS_LeagueOfLegendsPlayerTable = {
   players: Record<RSOHashedId, LeagueOfLegendsChampionTierNumeric>;
 }
-
-type LeaugeOfLegendsApiType =
-  | "SUMMONER-V4"
-  | "LEAGUE-V4"
-  | "CHAMPION-MASTERY-V4"
-  | "GEO-LOCATION";

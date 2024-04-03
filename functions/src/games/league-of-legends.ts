@@ -1,5 +1,5 @@
-import { store } from "..";
 import API from "../api/api";
+import { store } from "../index";
 import {
   getLeagueOfLegendsNumericTier,
   onCustomRequest,
@@ -49,13 +49,13 @@ export const createSurvey = onCustomRequest(async (req, res) => {
   res.status(200).send("Create Success");
 });
 
-type SurveyClient = {
-  limitMinute: number;
-  endTime: number;
-};
+
 type CheckSurveyResponse = {
   status: "open" | "closed" | "undefined";
-  data: SurveyClient | undefined;
+  data: {
+    limitMinute: number;
+    endTime: number;
+  } | undefined;
 };
 
 export const checkSurvey = onCustomRequest(async (req, res) => {
@@ -109,6 +109,10 @@ export const saveLeagueOfLegendsStat = onCustomRequest(async (req, res) => {
     return;
   }
 
+  // [ ] check already join
+
+  // await store.setSurvey("league of legends", hostHashedId);
+
   await store.initStat("league of legends", hashedId);
 
   if (apiType === 'LEAGUE-V4') {
@@ -119,7 +123,7 @@ export const saveLeagueOfLegendsStat = onCustomRequest(async (req, res) => {
       const soloRank = data[0];
 
       await Promise.all([
-        store.setLeagueOfLegendsStat(hashedId, {
+        store.setStat("league of legends", hashedId, {
           tierNumeric: getLeagueOfLegendsNumericTier(
             soloRank.tier,
             soloRank.rank
@@ -141,7 +145,7 @@ export const saveLeagueOfLegendsStat = onCustomRequest(async (req, res) => {
     }));
 
     await Promise.all([
-      store.setLeagueOfLegendsStat(hashedId, {
+      store.setStat("league of legends", hashedId, {
         champions
       }),
       store.writeToLeagueOfLegendsChart(hostHashedId, "CHAMPION-MASTERY-V4", {
@@ -158,7 +162,7 @@ export const saveLeagueOfLegendsStat = onCustomRequest(async (req, res) => {
     }
 
     await Promise.all([
-      store.setLeagueOfLegendsStat(hashedId, {
+      store.setStat("league of legends", hashedId, {
         level: data.summonerLevel,
         updateDate: new Date(),
         surveyList: {
