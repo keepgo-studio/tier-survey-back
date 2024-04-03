@@ -1,8 +1,8 @@
 export const LEAGUE_OF_LEGENDS = {
   maxRank: 4,
   tierNumericMap: {
-    CHALLENGER: 37,
-    GRANDMASTER: 33,
+    CHALLENGER: 31,
+    GRANDMASTER: 30,
     MASTER: 29,
     DIAMOND: 25,
     EMERALD: 21,

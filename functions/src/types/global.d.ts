@@ -9,26 +9,26 @@ type RSOHashedId = string;
 
 // game types
 // 1. league of legends types
-type LeagueOfLegendsChampionId = string;
+type LeagueOfLegendsChampionId = number;
 /** tier + rank를 합친 정수 값 */
 type LeagueOfLegendsChampionTierNumeric = number;
 type LeagueOfLegendsChampion = {
   championId: LeagueOfLegendsChampionId;
-  championLevel: 7;
-  championPoints: 181545;
+  championLevel: number;
+  championPoints: number;
 };
 type LeagueOfLegendsTier =
-  | "CHALLENGER" // 37
-  | "GRANDMASTER" // 33
-  | "MASTER" // 29
-  | "DIAMOND" // 25
-  | "EMERALD" // 21
-  | "PLATINUM" // 17
-  | "GOLD" // 13
-  | "SILVER" // 9
-  | "BRONZE" // 5
-  | "IRON"; // 1
-
+  | "CHALLENGER"
+  | "GRANDMASTER"
+  | "MASTER"
+  | "DIAMOND"
+  | "EMERALD"
+  | "PLATINUM"
+  | "GOLD"
+  | "SILVER"
+  | "BRONZE"
+  | "IRON";
+type LeagueOfLegendsRank = "I" | "II" | "III" | "IV";
 
 
 // firestore types
@@ -44,9 +44,9 @@ type FS_SupportCollectionType = "users" | "survey" | "stat" | "chart" | "chart-r
  * @deprecated
  * 치지직 profile 정보를 받아오는 api가 뚫리지 않은 이상 의미가 없음(https://comm-api.game.naver.com/nng_main/v1/profile/)
  */
-// type FS_User = {
-//   "rso": hashedId
-// }
+type FS_User = {
+  "rso": RSOHashedId
+}
 
 /**
  * ## survey
@@ -70,13 +70,13 @@ type FS_Survey = {
  *  받아온 id 를 hashed하여 이를 collection의 primary key로 사용하였다.
  */
 type FS_LeagueOfLegendsUser ={
-  // id: string;
-  // accountId: string;
-  // puuid: string;
-  // name: string;
-  // profileIconId: number;
-  // revisionDate: number;
-  // summonerLevel: number;
+  id: string;
+  accountId: string;
+  puuid: string;
+  name: string;
+  profileIconId: number;
+  revisionDate: number;
+  summonerLevel: number;
   hashedId: RSOHashedId;
 };
 
@@ -89,10 +89,10 @@ type FS_LeagueOfLegendsUser ={
  *  네이버 로그인 여부와 상관없이 RSO후 저장해야함
  */
 type FS_LeagueOfLegendsStat = {
-  tier: string;
+  tierNumeric: LeagueOfLegendsChampionTierNumeric;
   level: number;
   champions: LeagueOfLegendsChampion[];
-  surveyList: RSOHashedId[]; // 참여한 설문 리스트들
+  surveyList: Record<RSOHashedId, Date>; // 참여한 설문 리스트들
   updateDate: Date;
   geo: { latitude: number; longitude: number } | null;
 };
@@ -105,7 +105,6 @@ type FS_LeagueOfLegendsStat = {
  *  transaction read를 사용하여 항상 최신값을 받아오게
  */
 type FS_LeagueOfLegendsChart = {
-  participantCnt: number;
   tierCnt: Record<LeagueOfLegendsTier, number>;
   totalLevel: number;
   mostLovedChampion: Record<LeagueOfLegendsChampionId, number>;
@@ -124,7 +123,7 @@ type FS_LeagueOfLegendsChartReady = boolean;
 /**
  * ## league of legends player table
  * - collection: leagueOfLegends-player-table
- * - id: {@link RSOHashedId | }
+ * - id: {@link RSOHashedId}
  * - desc: 티어순으로 저장하는 유저 테이블, row는 {@link FS_LeagueOfLegendsStat}.
  *  최대 100명까지 저장
  *  firestore에 있는 함수, query의 orderBy, startAt, in연산자를 이용해 조회
@@ -132,3 +131,9 @@ type FS_LeagueOfLegendsChartReady = boolean;
 type FS_LeagueOfLegendsPlayerTable = {
   players: Record<RSOHashedId, LeagueOfLegendsChampionTierNumeric>;
 }
+
+type LeaugeOfLegendsApiType =
+  | "SUMMONER-V4"
+  | "LEAGUE-V4"
+  | "CHAMPION-MASTERY-V4"
+  | "GEO-LOCATION";

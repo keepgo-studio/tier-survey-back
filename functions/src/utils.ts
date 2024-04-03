@@ -1,5 +1,6 @@
 import { https } from "firebase-functions/v1";
 import * as Functions from "firebase-functions";
+import { LEAGUE_OF_LEGENDS } from "./vars";
 
 export const IS_DEV = process.env.FUNCTIONS_EMULATOR;
 
@@ -46,6 +47,23 @@ export function toCamelCase(str: string) {
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
 }
 
-export function generateCollectionUrl(game: SupportGame, collectionType: SupportCollectionType) {
+export function generateCollectionUrl(game: SupportGame, collectionType: FS_SupportCollectionType) {
   return `${toCamelCase(game)}-${collectionType}`;
+}
+
+export function getLeagueOfLegendsNumericTier(tier: LeagueOfLegendsTier, rank:LeagueOfLegendsRank) {
+  let rankNumeric = 0;
+
+  switch(rank) {
+    case "I":
+      rankNumeric++;
+    case "II":
+      rankNumeric++;
+    case  "III":
+      rankNumeric++;
+    case "IV":
+      rankNumeric++;
+  }
+
+  return LEAGUE_OF_LEGENDS.tierNumericMap[tier] + rankNumeric;
 }
