@@ -63,3 +63,16 @@ export function getLeagueOfLegendsNumericTier(tier: LeagueOfLegendsTier, rank:Le
 
   return LEAGUE_OF_LEGENDS.tierNumericMap[tier] + rankNumeric;
 }
+
+export function getLeagueOfLegendsTier(tierNumeric: number) {
+  const orderTierEntries = Object.entries(LEAGUE_OF_LEGENDS.tierNumericMap).sort(([,a], [,b]) => a - b);
+
+  for (const [key, val] of orderTierEntries) {
+    if (tierNumeric <= val) {
+      return key as LeagueOfLegendsTier;
+    }
+  }
+
+  // if tierNumeric === 0
+  return "UNRANK" ;
+}

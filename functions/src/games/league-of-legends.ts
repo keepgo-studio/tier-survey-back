@@ -28,20 +28,20 @@ export const createSurvey = onCustomRequest(async (req, res) => {
     return;
   }
 
-  const surveyResult = await store.setSurvey("league of legends", hashedId, {
-    password: password as string,
-    limitMinute: Number(limitMinute),
-    endTime: Date.now() + Number(limitMinute) * 60 * 1000,
-  });
-
-  if (!surveyResult) {
+  try {
+    await store.setSurvey("league of legends", hashedId, {
+      password: password as string,
+      limitMinute: Number(limitMinute),
+      endTime: Date.now() + Number(limitMinute) * 60 * 1000,
+    });
+  } catch {
     res.status(500).send("Something error while creating new survey");
     return;
   }
 
-  const chartResult = await store.resetChartAndPlayerTable("league of legends", hashedId);
-
-  if (!chartResult) {
+  try {
+    await store.resetChartAndPlayerTable("league of legends", hashedId);
+  } catch {
     res.status(500).send("Something error while setting chart table");
     return;
   }
@@ -89,8 +89,66 @@ export const checkSurvey = onCustomRequest(async (req, res) => {
   res.status(200).send(resData);
 });
 
+export const joinSurvey = onCustomRequest(async (req, res) => {
+  const params = req.query;
 
-export const saveLeagueOfLegendsStat = onCustomRequest(async (req, res) => {
+  if (!paramCheck(["hashedId", "hostHashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hashedId = params.hashedId as string,
+        hostHashedId = params.hostHashedId as string;
+
+  const hostSurvey = await store.getSurvey("league of legends", hostHashedId);
+
+  if (!hostSurvey) {
+    res.status(404).send("Cannot find survey");
+    return;
+  }
+
+  const stat = await store.getStat("league of legends", hashedId);
+
+  if (!stat) {
+    res.status(404).send("Cannot find participant stat information");
+    return;
+  }
+
+  
+  const results = await Promise.allSettled([
+      store.setChart("league of legends", hostHashedId, stat),
+      store.setPlayerTable("league of legends", hostHashedId, hashedId, stat.tierNumeric)
+    ]);
+  
+  if (results.some(r => r.status === "rejected")) {
+    res.status(400).send("Error while saving to player table and chart");
+    return;
+  }
+
+  res.status(200).send("done");
+});
+
+export const checkJoinSurvey = onCustomRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId", "hostHashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hashedId = params.hashedId as string,
+        hostHashedId = params.hostHashedId as string;
+
+  const isExist = await store.checkPlayerTable("league of legends", hostHashedId, hashedId);
+
+  if (isExist) {
+    res.status(200).send(true);
+  } else {
+    res.status(200).send(false);
+  }
+});
+
+export const saveStat = onCustomRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["apiType", "hashedId", "hostHashedId"], params)) {
@@ -109,31 +167,17 @@ export const saveLeagueOfLegendsStat = onCustomRequest(async (req, res) => {
     return;
   }
 
-  // [ ] check already join
-
-  // await store.setSurvey("league of legends", hostHashedId);
-
   await store.initStat("league of legends", hashedId);
 
   if (apiType === 'LEAGUE-V4') {
     const { requestLeagueV4 } = API["league of legends"];
     const data = await requestLeagueV4(user.id);
 
-    if (data.length > 0) {
-      const soloRank = data[0];
+    const tierNumeric = data.length > 0 ? getLeagueOfLegendsNumericTier(data[0].tier, data[0].rank) : 0;
 
-      await Promise.all([
-        store.setStat("league of legends", hashedId, {
-          tierNumeric: getLeagueOfLegendsNumericTier(
-            soloRank.tier,
-            soloRank.rank
-          )
-        }),
-        store.writeToLeagueOfLegendsChart(hostHashedId, "LEAGUE-V4", {
-          tier: soloRank.tier,
-        })
-      ]);
-    }
+    await store.setStat("league of legends", hashedId, {
+      tierNumeric
+    });
   } else if (apiType === 'CHAMPION-MASTERY-V4') {
     const { requestChampionMasteryV4 } = API["league of legends"];
     const data = await requestChampionMasteryV4(user.puuid);
@@ -144,35 +188,20 @@ export const saveLeagueOfLegendsStat = onCustomRequest(async (req, res) => {
       championPoints
     }));
 
-    await Promise.all([
-      store.setStat("league of legends", hashedId, {
-        champions
-      }),
-      store.writeToLeagueOfLegendsChart(hostHashedId, "CHAMPION-MASTERY-V4", {
-        champions
-      })
-    ]);
+    await store.setStat("league of legends", hashedId, {
+      champions
+    });
   } else if (apiType === 'SUMMONER-V4') {
     const { requestSummonerV4 } = API["league of legends"];
     const data = await requestSummonerV4(user.puuid);
 
-    if (!data) {
-      res.status(404).send("Cannot get summoner-v4");
-      return;
-    }
-
-    await Promise.all([
-      store.setStat("league of legends", hashedId, {
-        level: data.summonerLevel,
-        updateDate: new Date(),
-        surveyList: {
-          [hostHashedId]: new Date()
-        }
-      }),
-      store.writeToLeagueOfLegendsChart(hostHashedId, "SUMMONER-V4", {
-        userLevel: data.summonerLevel
-      })
-    ]);
+    await store.setStat("league of legends", hashedId, {
+      level: data ? data.summonerLevel : 0,
+      updateDate: new Date(),
+      surveyList: {
+        [hostHashedId]: new Date()
+      }
+    });
   }
 
   res.status(200).send("done");

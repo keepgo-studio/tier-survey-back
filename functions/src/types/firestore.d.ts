@@ -83,20 +83,12 @@ type FS_LeagueOfLegendsStat = {
  *  transaction read를 사용하여 항상 최신값을 받아오게
  */
 type FS_LeagueOfLegendsChart = {
-  tierCnt: Record<LeagueOfLegendsTier, number>;
+  participantCnt: number;
+  tierCnt: Record<LeagueOfLegendsTier | "UNRANK", number>;
   totalLevel: number;
   mostLovedChampion: Record<LeagueOfLegendsChampionId, number>;
   updateDate: Date;
 };
-
-/**
- * ## league of legends chart ready
- * - collection: leagueOfLegends-chart-ready
- * - id: {@link RSOHashedId}
- * - desc: 차트가 현재 완성되어 있는지 확인 (사실 그냥 endTime 되면 이 값이 바뀜)
- *  cloud tasks를 사용하여 endTime이 될 때 이 값이 딱 바뀜
- */
-type FS_LeagueOfLegendsChartReady = boolean;
 
 /**
  * ## league of legends player table
@@ -106,6 +98,4 @@ type FS_LeagueOfLegendsChartReady = boolean;
  *  최대 100명까지 저장
  *  firestore에 있는 함수, query의 orderBy, startAt, in연산자를 이용해 조회
  */
-type FS_LeagueOfLegendsPlayerTable = {
-  players: Record<RSOHashedId, LeagueOfLegendsChampionTierNumeric>;
-}
+type FS_LeagueOfLegendsPlayerTable = Record<RSOHashedId, LeagueOfLegendsChampionTierNumeric>;

@@ -2,7 +2,10 @@ import { getFirestore } from "firebase-admin/firestore";
 import { toCamelCase } from "../utils";
 import LeagueOfLegendsStore from "./league-of-legends";
 
-export function generateCollectionUrl(game: SupportGame, collectionType: FS_SupportCollectionType) {
+export function generateCollectionUrl(
+  game: SupportGame,
+  collectionType: FS_SupportCollectionType
+) {
   return `${toCamelCase(game)}-${collectionType}`;
 }
 
@@ -18,12 +21,7 @@ export default class Store {
       .collection(generateCollectionUrl(game, "survey"))
       .doc(hashedId);
 
-    try {
-      await surveyRef.set(data);
-      return true;
-    } catch {
-      return false;
-    }
+    await surveyRef.set(data);
   }
 
   async getSurvey(game: SupportGame, hashedId: string) {
@@ -50,10 +48,8 @@ export default class Store {
 
   async resetChartAndPlayerTable(game: SupportGame, hashedId: string) {
     if (game === "league of legends") {
-      return await LeagueOfLegendsStore.resetChartAndPlayerTable(this.db, hashedId);
+      await LeagueOfLegendsStore.resetChartAndPlayerTable(this.db, hashedId);
     }
-
-    return false;
   }
 
   async initStat(game: SupportGame, hashedId: string) {
@@ -62,22 +58,76 @@ export default class Store {
     }
   }
 
-  async setStat<T extends SupportGame>(game: T, hashedId: string, data: StatParamMap<T>) {
+  async setStat<T extends SupportGame>(
+    game: T,
+    hashedId: string,
+    data: StatParamMap<T>
+  ) {
     if (game === "league of legends") {
-      return await LeagueOfLegendsStore.setStat(this.db, hashedId, data);
+      await LeagueOfLegendsStore.setStat(this.db, hashedId, data);
     }
   }
 
-  async writeToLeagueOfLegendsChart<T extends LeaugeOfLegendsApiType>(
+  async getStat<T extends SupportGame>(
+    game: T,
+    hashedId: string
+  ): Promise<StatReturnMap<T> | undefined> {
+    if (game === "league of legends") {
+      return await LeagueOfLegendsStore.getStat(this.db, hashedId);
+    }
+
+    return undefined;
+  }
+
+  async setPlayerTable(
+    game: SupportGame,
     hostHashedId: string,
-    apiType: T,
-    param: LeagueOfLegendsApiParamMap<T>
+    hashedId: string,
+    tierNumeric: number
   ) {
-    try {
-      await LeagueOfLegendsStore.writeToChart(this.db, hostHashedId, apiType, param);
-      return true;
-    } catch {
+    if (game === "league of legends") {
+      await LeagueOfLegendsStore.writeToPlayerTable(
+        this.db,
+        hostHashedId,
+        hashedId,
+        tierNumeric
+      );
+    }
+  }
+
+  async checkPlayerTable(
+    game: SupportGame,
+    hostHashedId: string,
+    hashedId: string
+  ) {
+    const playerTableRef = this.db
+      .collection(generateCollectionUrl(game, "player-table"))
+      .doc(hostHashedId);
+    
+    const playerTable = await playerTableRef.get();
+
+    if (!playerTable.exists) {
       return false;
+    }
+
+    if (hashedId in playerTable.data()!) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async setChart<T extends SupportGame>(
+    game: T,
+    hostHashedId: string,
+    param: ChartParamMap<T>
+  ) {
+    if (game === "league of legends") {
+      await LeagueOfLegendsStore.setChartWithStat(
+        this.db,
+        hostHashedId,
+        param as ChartParam["league of legends"]
+      );
     }
   }
 }

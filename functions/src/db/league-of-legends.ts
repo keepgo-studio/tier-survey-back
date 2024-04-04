@@ -1,5 +1,6 @@
 import { Firestore } from "firebase-admin/firestore";
 import { generateCollectionUrl } from "./store";
+import { getLeagueOfLegendsTier } from "../utils";
 
 export default class LeagueOfLegendsStore {
   static async getUser(db: Firestore, hashedId: string) {
@@ -37,21 +38,18 @@ export default class LeagueOfLegendsStore {
             SILVER: 0,
             BRONZE: 0,
             IRON: 0,
+            UNRANK: 0
           },
           totalLevel: 0,
           mostLovedChampion: {},
           updateDate: new Date(),
+          participantCnt: 0,
         };
 
-    const platyerTableData: FS_LeagueOfLegendsPlayerTable = { players: {} };
+    const platyerTableData: FS_LeagueOfLegendsPlayerTable = {};
 
-    try {
-      await chartRef.set(chartData);
-      await playerTableRef.set(platyerTableData);
-      return true;
-    } catch {
-      return false;
-    }
+    await chartRef.set(chartData);
+    await playerTableRef.set(platyerTableData);
   }
 
   static async initStat(db: Firestore, hashedId: string) {
@@ -80,7 +78,7 @@ export default class LeagueOfLegendsStore {
       .collection(generateCollectionUrl("league of legends", "stat"))
       .doc(hashedId);
     
-    return await db.runTransaction(async (t) => {
+    await db.runTransaction(async (t) => {
       if (param.surveyList) {
         const doc = await t.get(statRef),
               stat = doc.data() as FS_LeagueOfLegendsStat,
@@ -95,49 +93,66 @@ export default class LeagueOfLegendsStore {
     });
   }
 
-  static async writeToChart<T extends LeaugeOfLegendsApiType>(
+  static async getStat(db: Firestore, hashedId: string) {
+    const statRef = db
+      .collection(generateCollectionUrl("league of legends", "stat"))
+      .doc(hashedId);
+
+    const doc = await statRef.get();
+
+    if (doc.exists) {
+      return doc.data() as FS_LeagueOfLegendsStat;
+    }
+
+    return undefined;
+  }
+
+  static async setChartWithStat(
     db: Firestore,
     hostHashedId: string,
-    apiType: T,
-    param: LeagueOfLegendsApiParamMap<T>,
+    stat: ChartParam["league of legends"]
   ) {
     const chartRef = db
       .collection(generateCollectionUrl("league of legends", "chart"))
       .doc(hostHashedId);
 
-    return await db.runTransaction(async (t) => {
+    await db.runTransaction(async (t) => {
       const doc = await t.get(chartRef),
             chart = doc.data() as FS_LeagueOfLegendsChart;
 
-      if (apiType === "SUMMONER-V4") {
-        const { userLevel } = param as LeagueOfLegendsApiParam["SUMMONER-V4"];
+      chart.tierCnt[getLeagueOfLegendsTier(stat.tierNumeric)] += 1;
+      stat.champions.forEach(champ => {
+        if (!chart.mostLovedChampion[champ.championId]) {
+          chart.mostLovedChampion[champ.championId] = 0;
+        }
 
-        t.update(chartRef, {
-          totalLevel: chart.totalLevel + userLevel,
-        });
-      } else if (apiType === "LEAGUE-V4") {
-        const { tier } = param as LeagueOfLegendsApiParam["LEAGUE-V4"];
+        chart.mostLovedChampion[champ.championId] += 1;
+      });
 
-        chart.tierCnt[tier] = chart.tierCnt[tier] + 1;
+      t.update(chartRef, {
+        mostLovedChampion: { ...chart.mostLovedChampion },
+        participantCnt: chart.participantCnt + 1,
+        tierCnt: { ...chart.tierCnt },
+        totalLevel: chart.totalLevel + stat.level,
+        updateDate: new Date()
+      } as FS_LeagueOfLegendsChart);
+    });
+  }
 
-        t.update(chartRef, {
-          tierCnt: { ...chart.tierCnt },
-        });
-      } else if (apiType === "CHAMPION-MASTERY-V4") {
-        const { champions } = param as LeagueOfLegendsApiParam["CHAMPION-MASTERY-V4"];
+  static async writeToPlayerTable (
+    db: Firestore,
+    hostHashedId: string,
+    hashedId: string,
+    tierNumeric: number
+  ) {
+    const playerTableRef = db
+      .collection(generateCollectionUrl("league of legends", "player-table"))
+      .doc(hostHashedId);
 
-        champions.forEach((champ) => {
-          if (!(champ.championId in chart.mostLovedChampion)) {
-            chart.mostLovedChampion[champ.championId] = 0;
-          }
-
-          chart.mostLovedChampion[champ.championId] += 1;
-        });
-
-        t.update(chartRef, {
-          mostLovedChampion: { ...chart.mostLovedChampion },
-        });
-      }
+    await db.runTransaction(async (t) => {
+      t.update(playerTableRef, {
+        [hashedId]: tierNumeric
+      });
     });
   }
 }
