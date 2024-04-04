@@ -49,16 +49,18 @@ export function toCamelCase(str: string) {
 
 export function getLeagueOfLegendsNumericTier(tier: LeagueOfLegendsTier, rank:LeagueOfLegendsRank) {
   let rankNumeric = 0;
-
-  switch(rank) {
-    case "I":
-      rankNumeric++;
-    case "II":
-      rankNumeric++;
-    case  "III":
-      rankNumeric++;
-    case "IV":
-      rankNumeric++;
+  
+  if (LEAGUE_OF_LEGENDS.tierNumericMap[tier] < LEAGUE_OF_LEGENDS.tierNumericMap["MASTER"]) {
+    switch(rank) {
+      case "I":
+        rankNumeric++;
+      case "II":
+        rankNumeric++;
+      case  "III":
+        rankNumeric++;
+      case "IV":
+        break;
+    }
   }
 
   return LEAGUE_OF_LEGENDS.tierNumericMap[tier] + rankNumeric;
