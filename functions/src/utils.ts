@@ -50,7 +50,12 @@ export function toCamelCase(str: string) {
 export function getLeagueOfLegendsNumericTier(tier: LeagueOfLegendsTier, rank:LeagueOfLegendsRank) {
   let rankNumeric = 0;
   
-  if (LEAGUE_OF_LEGENDS.tierNumericMap[tier] < LEAGUE_OF_LEGENDS.tierNumericMap["MASTER"]) {
+  const userRank = LEAGUE_OF_LEGENDS.tierNumericMap.get(tier),
+        masterRank = LEAGUE_OF_LEGENDS.tierNumericMap.get("MASTER");
+
+  if (!userRank) return 0;
+
+  if (userRank < masterRank!) {
     switch(rank) {
       case "I":
         rankNumeric++;
@@ -63,14 +68,12 @@ export function getLeagueOfLegendsNumericTier(tier: LeagueOfLegendsTier, rank:Le
     }
   }
 
-  return LEAGUE_OF_LEGENDS.tierNumericMap[tier] + rankNumeric;
+  return userRank + rankNumeric;
 }
 
 export function getLeagueOfLegendsTier(tierNumeric: number) {
-  const orderTierEntries = Object.entries(LEAGUE_OF_LEGENDS.tierNumericMap).sort(([,a], [,b]) => a - b);
-
-  for (const [key, val] of orderTierEntries) {
-    if (tierNumeric <= val) {
+  for (const [key, val] of LEAGUE_OF_LEGENDS.tierNumericMap) {
+    if (tierNumeric >= val) {
       return key as LeagueOfLegendsTier;
     }
   }
