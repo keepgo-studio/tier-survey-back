@@ -1,6 +1,30 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { toCamelCase } from "../utils";
-import LeagueOfLegendsStore from "./league-of-legends";
+import LeagueOfLegendsStore, { type FS_LeagueOfLegendsStat } from "./league-of-legends";
+
+export type StatParam = {
+  "league of legends": Partial<FS_LeagueOfLegendsStat>;
+  "teamfight tactics": {};
+  "valorant": {};
+}
+
+type StatParamMap<T extends SupportGame> = StatParam[T];
+
+type StatReturn = {
+  "league of legends": FS_LeagueOfLegendsStat
+  "teamfight tactics": {};
+  "valorant": {};
+}
+
+type StatReturnMap<T extends SupportGame> = StatReturn[T];
+
+export type ChartParam = {
+  "league of legends": FS_LeagueOfLegendsStat
+  "teamfight tactics": {};
+  "valorant": {};
+}
+
+type ChartParamMap<T extends SupportGame> = ChartParam[T];
 
 export function generateCollectionUrl(
   game: SupportGame,
@@ -129,5 +153,19 @@ export default class Store {
         param as ChartParam["league of legends"]
       );
     }
+  }
+
+  async getChart(
+    game: SupportGame,
+    hostHashedId: string,
+  ) {
+    if (game === "league of legends") {
+      return await LeagueOfLegendsStore.getChart(
+        this.db,
+        hostHashedId
+      );
+    }
+
+    return undefined;
   }
 }

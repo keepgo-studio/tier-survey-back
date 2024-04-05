@@ -1,6 +1,67 @@
-import { Firestore } from "firebase-admin/firestore";
-import { generateCollectionUrl } from "./store";
+import { Firestore, Timestamp } from "firebase-admin/firestore";
+import { type ChartParam, type StatParam, generateCollectionUrl } from "./store";
 import { getLeagueOfLegendsTier } from "../utils";
+
+// firestore collections - league of legends related
+/**
+ * ## users
+ * - collection: leagueOfLegends-users
+ * - id: {@link RSOHashedId}
+ * - desc: RSO 후 가장 먼저 등록되는 데이터
+ *  받아온 id 를 hashed하여 이를 collection의 primary key로 사용하였다.
+ */
+export type FS_LeagueOfLegendsUser ={
+  id: string;
+  accountId: string;
+  puuid: string;
+  name: string;
+  profileIconId: number;
+  revisionDate: number;
+  summonerLevel: number;
+  hashedId: RSOHashedId;
+};
+
+/**
+ * ## league of legends stat
+ * - collection: leagueOfLegends-stat
+ * - id: {@link RSOHashedId}
+ * - desc: 유저가 권한을 승인함으로써 내놓은 정보들
+ *  여기에 모두 저장완료하면 chart, player-table(티어 기준으로)에 저장
+ *  네이버 로그인 여부와 상관없이 RSO후 저장해야함
+ */
+export type FS_LeagueOfLegendsStat = {
+  tierNumeric: LeagueOfLegendsChampionTierNumeric;
+  level: number;
+  champions: LeagueOfLegendsChampion[];
+  surveyList: Record<RSOHashedId, Timestamp>; // 참여한 설문 리스트들
+  updateDate: Timestamp;
+  geo: { latitude: number; longitude: number } | null;
+};
+
+/**
+ * ## league of legends chart
+ * - collection: leagueOfLegends-chart
+ * - id: {@link RSOHashedId}
+ * - desc: **종합한 정보들**을 기록한 데이터
+ *  transaction read를 사용하여 항상 최신값을 받아오게
+ */
+export type FS_LeagueOfLegendsChart = {
+  participantCnt: number;
+  tierCnt: Record<LeagueOfLegendsTier | "UNRANK", number>;
+  totalLevel: number;
+  mostLovedChampion: Record<LeagueOfLegendsChampionId, number>;
+  updateDate: Timestamp;
+};
+
+/**
+ * ## league of legends player table
+ * - collection: leagueOfLegends-player-table
+ * - id: {@link RSOHashedId}
+ * - desc: 티어순으로 저장하는 유저 테이블, row는 {@link FS_LeagueOfLegendsStat}.
+ *  최대 100명까지 저장
+ *  firestore에 있는 함수, query의 orderBy, startAt, in연산자를 이용해 조회
+ */
+export type FS_LeagueOfLegendsPlayerTable = Record<RSOHashedId, LeagueOfLegendsChampionTierNumeric>;
 
 export default class LeagueOfLegendsStore {
   static async getUser(db: Firestore, hashedId: string) {
@@ -42,7 +103,7 @@ export default class LeagueOfLegendsStore {
           },
           totalLevel: 0,
           mostLovedChampion: {},
-          updateDate: new Date(),
+          updateDate: Timestamp.fromDate(new Date()),
           participantCnt: 0,
         };
 
@@ -67,7 +128,7 @@ export default class LeagueOfLegendsStore {
           level: 0,
           surveyList: {},
           tierNumeric: 0,
-          updateDate: new Date(),
+          updateDate: Timestamp.fromDate(new Date()),
         } as FS_LeagueOfLegendsStat);
       }
     });
@@ -134,7 +195,7 @@ export default class LeagueOfLegendsStore {
         participantCnt: chart.participantCnt + 1,
         tierCnt: { ...chart.tierCnt },
         totalLevel: chart.totalLevel + stat.level,
-        updateDate: new Date()
+        updateDate: Timestamp.fromDate(new Date())
       } as FS_LeagueOfLegendsChart);
     });
   }
@@ -154,5 +215,22 @@ export default class LeagueOfLegendsStore {
         [hashedId]: tierNumeric
       });
     });
+  }
+
+  static async getChart(
+    db: Firestore,
+    hashedId: string,
+  ) {
+    const chartRef = db
+      .collection(generateCollectionUrl("league of legends", "chart"))
+      .doc(hashedId);
+
+    const doc = await chartRef.get();
+
+    if (doc.exists) {
+      return doc.data() as FS_LeagueOfLegendsChart;
+    }
+
+    return undefined;
   }
 }

@@ -1,3 +1,4 @@
+import { Timestamp } from "firebase-admin/firestore";
 import API from "../api/api";
 import { store } from "../index";
 import {
@@ -5,6 +6,7 @@ import {
   onCustomRequest,
   paramCheck,
 } from "../utils";
+
 
 export const createSurvey = onCustomRequest(async (req, res) => {
   const params = req.query;
@@ -58,6 +60,7 @@ type CheckSurveyResponse = {
   } | undefined;
 };
 
+
 export const checkSurvey = onCustomRequest(async (req, res) => {
   const params = req.query;
 
@@ -88,6 +91,7 @@ export const checkSurvey = onCustomRequest(async (req, res) => {
 
   res.status(200).send(resData);
 });
+
 
 export const joinSurvey = onCustomRequest(async (req, res) => {
   const params = req.query;
@@ -128,6 +132,7 @@ export const joinSurvey = onCustomRequest(async (req, res) => {
   res.status(200).send("done");
 });
 
+
 export const checkJoinSurvey = onCustomRequest(async (req, res) => {
   const params = req.query;
 
@@ -147,6 +152,7 @@ export const checkJoinSurvey = onCustomRequest(async (req, res) => {
     res.status(200).send(false);
   }
 });
+
 
 export const saveStat = onCustomRequest(async (req, res) => {
   const params = req.query;
@@ -197,12 +203,90 @@ export const saveStat = onCustomRequest(async (req, res) => {
 
     await store.setStat("league of legends", hashedId, {
       level: data ? data.summonerLevel : 0,
-      updateDate: new Date(),
+      updateDate: Timestamp.fromDate(new Date()),
       surveyList: {
-        [hostHashedId]: new Date()
+        [hostHashedId]: Timestamp.fromDate(new Date())
       }
     });
   }
 
   res.status(200).send("done");
+});
+
+
+export const getUser = onCustomRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hashedId = params.hashedId as string;
+
+  const user = await store.getUser("league of legends", hashedId);
+
+  if (!user) {
+    res.status(404).send("Cannot found user");
+    return;
+  }
+
+  const { name, profileIconId, summonerLevel } = user;
+  
+  res.status(200).send({
+    name,
+    profileIconId,
+    level: summonerLevel,
+  });
+});
+
+
+
+export const getStat = onCustomRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hashedId = params.hashedId as string;
+
+  const stat = await store.getStat("league of legends", hashedId);
+
+  if (!stat) {
+    res.status(404).send("Cannot found user");
+    return;
+  }
+
+  const { tierNumeric, champions } = stat;
+  
+  res.status(200).send({
+    tierNumeric,
+    champions
+  });
+});
+
+
+export const getChart = onCustomRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hashedId = params.hashedId as string;
+
+  const chart = await store.getChart("league of legends", hashedId);
+
+  if (!chart) {
+    res.status(404).send("Cannot found chart");
+    return;
+  }
+
+  res.status(200).send({
+    ...chart,
+    updateDate: chart.updateDate.toDate()
+  });
 });
