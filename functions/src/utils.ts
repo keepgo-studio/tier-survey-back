@@ -4,7 +4,7 @@ import { LEAGUE_OF_LEGENDS } from "./vars";
 
 export const IS_DEV = process.env.FUNCTIONS_EMULATOR;
 
-type HttpsHandler = Parameters<typeof https.onRequest>[0];
+export type HttpsHandler = Parameters<typeof https.onRequest>[0];
 
 const cors: (handler: HttpsHandler) => HttpsHandler =
   (handler) => (req, res) => {
@@ -30,16 +30,19 @@ export const middleware = {
   cors,
 };
 
-export const onCustomRequest = (handler: HttpsHandler) =>
+export const onCORSRequest = (handler: HttpsHandler) =>
   Functions.region("asia-northeast3").https.onRequest(cors(handler));
 
+export const onRequest = (handler: HttpsHandler) =>
+  Functions.region("asia-northeast3").https.onRequest(handler);
+
 export const paramCheck = (keys: string | string[], params: Object) => {
-  if (typeof keys === 'string') {
+  if (typeof keys === "string") {
     return keys in params;
   }
 
-  return keys.every(_key => _key in params);
-}
+  return keys.every((_key) => _key in params);
+};
 
 export function toCamelCase(str: string) {
   return str
@@ -47,21 +50,24 @@ export function toCamelCase(str: string) {
     .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
 }
 
-export function getLeagueOfLegendsNumericTier(tier: LeagueOfLegendsTier, rank:LeagueOfLegendsRank) {
+export function getLeagueOfLegendsNumericTier(
+  tier: LeagueOfLegendsTier,
+  rank: LeagueOfLegendsRank
+) {
   let rankNumeric = 0;
-  
+
   const userRank = LEAGUE_OF_LEGENDS.tierNumericMap.get(tier),
-        masterRank = LEAGUE_OF_LEGENDS.tierNumericMap.get("MASTER");
+    masterRank = LEAGUE_OF_LEGENDS.tierNumericMap.get("MASTER");
 
   if (!userRank) return 0;
 
   if (userRank < masterRank!) {
-    switch(rank) {
+    switch (rank) {
       case "I":
         rankNumeric++;
       case "II":
         rankNumeric++;
-      case  "III":
+      case "III":
         rankNumeric++;
       case "IV":
         break;
@@ -79,5 +85,9 @@ export function getLeagueOfLegendsTier(tierNumeric: number) {
   }
 
   // if tierNumeric === 0
-  return "UNRANK" ;
+  return "UNRANK";
+}
+
+export function getRequestUrl(req: Functions.Request) {
+  return req.protocol + "://" + req.get("host") + req.originalUrl;
 }

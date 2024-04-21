@@ -1,5 +1,10 @@
 import { Firestore, Timestamp } from "firebase-admin/firestore";
-import { type ChartParam, type StatParam, generateCollectionUrl } from "./store";
+import {
+  type ChartParam,
+  type StatParam,
+  type UserParam,
+  generateCollectionUrl,
+} from "./store";
 import { getLeagueOfLegendsTier } from "../utils";
 
 // firestore collections - league of legends related
@@ -10,7 +15,7 @@ import { getLeagueOfLegendsTier } from "../utils";
  * - desc: RSO 후 가장 먼저 등록되는 데이터
  *  받아온 id 를 hashed하여 이를 collection의 primary key로 사용하였다.
  */
-export type FS_LeagueOfLegendsUser ={
+export type FS_LeagueOfLegendsUser = {
   id: string;
   accountId: string;
   puuid: string;
@@ -18,7 +23,7 @@ export type FS_LeagueOfLegendsUser ={
   profileIconId: number;
   revisionDate: number;
   summonerLevel: number;
-  hashedId: RSOHashedId;
+  hashedId: RSOHashedPUUId;
 };
 
 /**
@@ -33,7 +38,7 @@ export type FS_LeagueOfLegendsStat = {
   tierNumeric: LeagueOfLegendsChampionTierNumeric;
   level: number;
   champions: LeagueOfLegendsChampion[];
-  surveyList: Record<RSOHashedId, Timestamp>; // 참여한 설문 리스트들
+  surveyList: Record<RSOHashedPUUId, Timestamp>; // 참여한 설문 리스트들
   updateDate: Timestamp;
   geo: { latitude: number; longitude: number } | null;
 };
@@ -61,15 +66,48 @@ export type FS_LeagueOfLegendsChart = {
  *  최대 100명까지 저장
  *  firestore에 있는 함수, query의 orderBy, startAt, in연산자를 이용해 조회
  */
-export type FS_LeagueOfLegendsPlayerTable = Record<RSOHashedId, LeagueOfLegendsChampionTierNumeric>;
+export type FS_LeagueOfLegendsPlayerTable = Record<
+  RSOHashedPUUId,
+  LeagueOfLegendsChampionTierNumeric
+>;
 
 export default class LeagueOfLegendsStore {
-  static async getUser(db: Firestore, hashedId: string) {
-    const surveyRef = db
+  static async writeUser(
+    db: Firestore,
+    hashedId: string,
+    data: UserParam["league of legends"]
+  ) {
+    const userRef = db
       .collection(generateCollectionUrl("league of legends", "users"))
       .doc(hashedId);
 
-    const doc = await surveyRef.get();
+    const doc = await userRef.get();
+
+    if (doc.exists) {
+      await userRef.update(data);
+    } else {
+      const initData: FS_LeagueOfLegendsUser = {
+        id: "",
+        accountId: "",
+        puuid: "",
+        name: "",
+        profileIconId: 0,
+        revisionDate: 0,
+        summonerLevel: 0,
+        hashedId,
+        ...data,
+      };
+
+      await userRef.set(initData);
+    }
+  }
+
+  static async getUser(db: Firestore, hashedId: string) {
+    const userRef = db
+      .collection(generateCollectionUrl("league of legends", "users"))
+      .doc(hashedId);
+
+    const doc = await userRef.get();
 
     if (doc.exists) {
       return doc.data() as FS_LeagueOfLegendsUser;
@@ -88,24 +126,24 @@ export default class LeagueOfLegendsStore {
       .doc(hashedId);
 
     const chartData: FS_LeagueOfLegendsChart = {
-          tierCnt: {
-            CHALLENGER: 0,
-            GRANDMASTER: 0,
-            MASTER: 0,
-            DIAMOND: 0,
-            EMERALD: 0,
-            PLATINUM: 0,
-            GOLD: 0,
-            SILVER: 0,
-            BRONZE: 0,
-            IRON: 0,
-            UNRANK: 0
-          },
-          totalLevel: 0,
-          mostLovedChampion: {},
-          updateDate: Timestamp.fromDate(new Date()),
-          participantCnt: 0,
-        };
+      tierCnt: {
+        CHALLENGER: 0,
+        GRANDMASTER: 0,
+        MASTER: 0,
+        DIAMOND: 0,
+        EMERALD: 0,
+        PLATINUM: 0,
+        GOLD: 0,
+        SILVER: 0,
+        BRONZE: 0,
+        IRON: 0,
+        UNRANK: 0,
+      },
+      totalLevel: 0,
+      mostLovedChampion: {},
+      updateDate: Timestamp.fromDate(new Date()),
+      participantCnt: 0,
+    };
 
     const platyerTableData: FS_LeagueOfLegendsPlayerTable = {};
 
@@ -118,7 +156,7 @@ export default class LeagueOfLegendsStore {
       .collection(generateCollectionUrl("league of legends", "stat"))
       .doc(hashedId);
 
-    await db.runTransaction(async t => {
+    await db.runTransaction(async (t) => {
       const doc = await t.get(statRef);
 
       if (!doc.exists) {
@@ -134,16 +172,20 @@ export default class LeagueOfLegendsStore {
     });
   }
 
-  static async setStat(db: Firestore, hashedId: string, param: StatParam["league of legends"]) {
+  static async setStat(
+    db: Firestore,
+    hashedId: string,
+    param: StatParam["league of legends"]
+  ) {
     const statRef = db
       .collection(generateCollectionUrl("league of legends", "stat"))
       .doc(hashedId);
-    
+
     await db.runTransaction(async (t) => {
       if (param.surveyList) {
         const doc = await t.get(statRef),
-              stat = doc.data() as FS_LeagueOfLegendsStat,
-              newSurveyList = {};
+          stat = doc.data() as FS_LeagueOfLegendsStat,
+          newSurveyList = {};
 
         Object.assign(newSurveyList, stat.surveyList, param.surveyList);
 
@@ -179,10 +221,10 @@ export default class LeagueOfLegendsStore {
 
     await db.runTransaction(async (t) => {
       const doc = await t.get(chartRef),
-            chart = doc.data() as FS_LeagueOfLegendsChart;
+        chart = doc.data() as FS_LeagueOfLegendsChart;
 
       chart.tierCnt[getLeagueOfLegendsTier(stat.tierNumeric)] += 1;
-      stat.champions.forEach(champ => {
+      stat.champions.forEach((champ) => {
         if (!chart.mostLovedChampion[champ.championId]) {
           chart.mostLovedChampion[champ.championId] = 0;
         }
@@ -195,12 +237,12 @@ export default class LeagueOfLegendsStore {
         participantCnt: chart.participantCnt + 1,
         tierCnt: { ...chart.tierCnt },
         totalLevel: chart.totalLevel + stat.level,
-        updateDate: Timestamp.fromDate(new Date())
+        updateDate: Timestamp.fromDate(new Date()),
       } as FS_LeagueOfLegendsChart);
     });
   }
 
-  static async writeToPlayerTable (
+  static async writeToPlayerTable(
     db: Firestore,
     hostHashedId: string,
     hashedId: string,
@@ -212,15 +254,12 @@ export default class LeagueOfLegendsStore {
 
     await db.runTransaction(async (t) => {
       t.update(playerTableRef, {
-        [hashedId]: tierNumeric
+        [hashedId]: tierNumeric,
       });
     });
   }
 
-  static async getChart(
-    db: Firestore,
-    hashedId: string,
-  ) {
+  static async getChart(db: Firestore, hashedId: string) {
     const chartRef = db
       .collection(generateCollectionUrl("league of legends", "chart"))
       .doc(hashedId);

@@ -3,12 +3,11 @@ type SupportGame = "league of legends" | "teamfight tactics" | "valorant";
 // OAuth types
 type NaverHashedId = string;
 
-type RSOHashedId = string;
+type RSOHashedPUUId = string;
 
 
 // FS_ prefix == FireStore
 // firestore collections - global
-type FS_SupportCollectionType = "users" | "survey" | "stat" | "chart" | "chart-ready" | "player-table";
 /**
  * ## user
  * - collection: users
@@ -20,7 +19,7 @@ type FS_SupportCollectionType = "users" | "survey" | "stat" | "chart" | "chart-r
  * 치지직 profile 정보를 받아오는 api가 뚫리지 않은 이상 의미가 없음(https://comm-api.game.naver.com/nng_main/v1/profile/)
  */
 type FS_User = {
-  "rso": RSOHashedId
+  "rso": RSOHashedPUUId
   "naver": {}
 }
 

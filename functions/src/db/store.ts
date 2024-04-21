@@ -1,34 +1,53 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { toCamelCase } from "../utils";
-import LeagueOfLegendsStore, { type FS_LeagueOfLegendsStat } from "./league-of-legends";
+import LeagueOfLegendsStore, {
+  type FS_LeagueOfLegendsUser,
+  type FS_LeagueOfLegendsStat,
+} from "./league-of-legends";
+
+export type UserParam = {
+  "league of legends": Partial<FS_LeagueOfLegendsUser>;
+  "teamfight tactics": {};
+  valorant: {};
+};
+
+type UserParamMap<T extends SupportGame> = UserParam[T];
 
 export type StatParam = {
   "league of legends": Partial<FS_LeagueOfLegendsStat>;
   "teamfight tactics": {};
-  "valorant": {};
-}
+  valorant: {};
+};
 
 type StatParamMap<T extends SupportGame> = StatParam[T];
 
 type StatReturn = {
-  "league of legends": FS_LeagueOfLegendsStat
+  "league of legends": FS_LeagueOfLegendsStat;
   "teamfight tactics": {};
-  "valorant": {};
-}
+  valorant: {};
+};
 
 type StatReturnMap<T extends SupportGame> = StatReturn[T];
 
 export type ChartParam = {
-  "league of legends": FS_LeagueOfLegendsStat
+  "league of legends": FS_LeagueOfLegendsStat;
   "teamfight tactics": {};
-  "valorant": {};
-}
+  valorant: {};
+};
 
 type ChartParamMap<T extends SupportGame> = ChartParam[T];
 
+type FS_SupportGameCollectionType =
+  | "users"
+  | "survey"
+  | "stat"
+  | "chart"
+  | "chart-ready"
+  | "player-table";
+
 export function generateCollectionUrl(
   game: SupportGame,
-  collectionType: FS_SupportCollectionType
+  collectionType: FS_SupportGameCollectionType
 ) {
   return `${toCamelCase(game)}-${collectionType}`;
 }
@@ -60,6 +79,16 @@ export default class Store {
     }
 
     return undefined;
+  }
+
+  async writeUser<T extends SupportGame>(
+    game: T,
+    hashedId: string,
+    data: UserParamMap<T>
+  ) {
+    if (game === "league of legends") {
+      await LeagueOfLegendsStore.writeUser(this.db, hashedId, data);
+    }
   }
 
   async getUser(game: SupportGame, hashedId: string) {
@@ -127,7 +156,7 @@ export default class Store {
     const playerTableRef = this.db
       .collection(generateCollectionUrl(game, "player-table"))
       .doc(hostHashedId);
-    
+
     const playerTable = await playerTableRef.get();
 
     if (!playerTable.exists) {
@@ -155,15 +184,9 @@ export default class Store {
     }
   }
 
-  async getChart(
-    game: SupportGame,
-    hostHashedId: string,
-  ) {
+  async getChart(game: SupportGame, hostHashedId: string) {
     if (game === "league of legends") {
-      return await LeagueOfLegendsStore.getChart(
-        this.db,
-        hostHashedId
-      );
+      return await LeagueOfLegendsStore.getChart(this.db, hostHashedId);
     }
 
     return undefined;

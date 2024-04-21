@@ -1,14 +1,34 @@
 import { Timestamp } from "firebase-admin/firestore";
-import API from "../api/api";
+import API from "../api";
 import { store } from "../index";
 import {
   getLeagueOfLegendsNumericTier,
-  onCustomRequest,
+  onCORSRequest,
+  onRequest,
   paramCheck,
 } from "../utils";
 
 
-export const createSurvey = onCustomRequest(async (req, res) => {
+export const writeUser = onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(403).send("Only POST allowed");
+    return;
+  }
+
+  const { hashedId, user } = JSON.parse(req.body);
+
+  if (!hashedId) {
+    res.status(400).send("bad request");
+    return;
+  }
+
+  await store.writeUser("league of legends", hashedId, user);
+
+  res.status(200).send("Write User Success");
+});
+
+
+export const createSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["limitMinute", "password", "hashedId"], params)) {
@@ -61,7 +81,7 @@ type CheckSurveyResponse = {
 };
 
 
-export const checkSurvey = onCustomRequest(async (req, res) => {
+export const checkSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["hashedId"], params)) {
@@ -93,7 +113,7 @@ export const checkSurvey = onCustomRequest(async (req, res) => {
 });
 
 
-export const joinSurvey = onCustomRequest(async (req, res) => {
+export const joinSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["hashedId", "hostHashedId"], params)) {
@@ -133,7 +153,7 @@ export const joinSurvey = onCustomRequest(async (req, res) => {
 });
 
 
-export const checkJoinSurvey = onCustomRequest(async (req, res) => {
+export const checkJoinSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["hashedId", "hostHashedId"], params)) {
@@ -154,7 +174,7 @@ export const checkJoinSurvey = onCustomRequest(async (req, res) => {
 });
 
 
-export const saveStat = onCustomRequest(async (req, res) => {
+export const saveStat = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["apiType", "hashedId", "hostHashedId"], params)) {
@@ -201,20 +221,23 @@ export const saveStat = onCustomRequest(async (req, res) => {
     const { requestSummonerV4 } = API["league of legends"];
     const data = await requestSummonerV4(user.puuid);
 
-    await store.setStat("league of legends", hashedId, {
-      level: data ? data.summonerLevel : 0,
-      updateDate: Timestamp.fromDate(new Date()),
-      surveyList: {
-        [hostHashedId]: Timestamp.fromDate(new Date())
-      }
-    });
+    await Promise.allSettled([
+      store.setStat("league of legends", hashedId, {
+        level: data ? data.summonerLevel : 0,
+        updateDate: Timestamp.fromDate(new Date()),
+        surveyList: {
+          [hostHashedId]: Timestamp.fromDate(new Date())
+        }
+      }),
+      store.writeUser("league of legends", hashedId, { ...data })
+    ]);
   }
 
   res.status(200).send("done");
 });
 
 
-export const getUser = onCustomRequest(async (req, res) => {
+export const getUser = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["hashedId"], params)) {
@@ -242,7 +265,7 @@ export const getUser = onCustomRequest(async (req, res) => {
 
 
 
-export const getStat = onCustomRequest(async (req, res) => {
+export const getStat = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["hashedId"], params)) {
@@ -268,7 +291,7 @@ export const getStat = onCustomRequest(async (req, res) => {
 });
 
 
-export const getChart = onCustomRequest(async (req, res) => {
+export const getChart = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["hashedId"], params)) {

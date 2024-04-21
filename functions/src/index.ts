@@ -8,9 +8,4 @@ export const leagueOfLegends = {
   ...game1
 };
 
-export const auth = {
-  // "naver": "oauth2-callback"
-  // "rso":
-}
-
 export const store = new Store();

@@ -1,3 +1,11 @@
+async function rsoFetch(url: string) {
+  return fetch(url, {
+    headers: {
+      "X-Riot-Token": process.env.API_KEY
+    }
+  });
+}
+
 type ChampionMasteryDto = {
   puuid: string;
   championId: LeagueOfLegendsChampionId;
@@ -9,14 +17,6 @@ type ChampionMasteryDto = {
   chestGranted: boolean;
   tokensEarned: number;
   summonerId: string;
-}
-
-async function rsoFetch(url: string) {
-  return fetch(url, {
-    headers: {
-      "X-Riot-Token": process.env.API_KEY
-    }
-  });
 }
 
 export async function requestChampionMasteryV4(encryptedPUUID: string): Promise<Array<ChampionMasteryDto>> {
@@ -41,13 +41,13 @@ type LeagueEntryDTO = {
   hotStreak: boolean;
 }
 
-async function requestLeagueV4(encryptedSummonerId: string): Promise<Array<LeagueEntryDTO>> {
+export async function requestLeagueV4(encryptedSummonerId: string): Promise<Array<LeagueEntryDTO>> {
   return await rsoFetch(`https://kr.api.riotgames.com/lol/league/v4/entries/by-summoner/${encryptedSummonerId}`)
     .then(res => res.json())
     .catch(() => []);
 }
 
-async function requestSummonerV4(encryptedPUUID: string): Promise<{
+export async function requestSummonerV4(encryptedPUUID: string): Promise<{
   id: string;
   accountId: string;
   puuid: string;
@@ -60,15 +60,3 @@ async function requestSummonerV4(encryptedPUUID: string): Promise<{
     .then(res => res.json())
     .catch(() => undefined);
 }
-
-const LeagueOfLegends = {
-  requestSummonerV4,
-  requestChampionMasteryV4,
-  requestLeagueV4
-}
-
-const API = {
-  "league of legends": LeagueOfLegends
-};
-
-export default API;
