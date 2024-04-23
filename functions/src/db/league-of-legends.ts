@@ -36,6 +36,7 @@ export type FS_LeagueOfLegendsUser = {
  */
 export type FS_LeagueOfLegendsStat = {
   tierNumeric: LeagueOfLegendsChampionTierNumeric;
+  flexTierNumeric: LeagueOfLegendsChampionTierNumeric;
   level: number;
   champions: LeagueOfLegendsChampion[];
   surveyList: Record<RSOHashedPUUId, Timestamp>; // 참여한 설문 리스트들
@@ -53,6 +54,7 @@ export type FS_LeagueOfLegendsStat = {
 export type FS_LeagueOfLegendsChart = {
   participantCnt: number;
   tierCnt: Record<LeagueOfLegendsTier | "UNRANK", number>;
+  flexTierCnt: Record<LeagueOfLegendsTier | "UNRANK", number>;
   totalLevel: number;
   mostLovedChampion: Record<LeagueOfLegendsChampionId, number>;
   updateDate: Timestamp;
@@ -91,7 +93,7 @@ export default class LeagueOfLegendsStore {
         accountId: "",
         puuid: "",
         name: "",
-        profileIconId: 0,
+        profileIconId: 1452,
         revisionDate: 0,
         summonerLevel: 0,
         hashedId,
@@ -139,6 +141,19 @@ export default class LeagueOfLegendsStore {
         IRON: 0,
         UNRANK: 0,
       },
+      flexTierCnt: {
+        CHALLENGER: 0,
+        GRANDMASTER: 0,
+        MASTER: 0,
+        DIAMOND: 0,
+        EMERALD: 0,
+        PLATINUM: 0,
+        GOLD: 0,
+        SILVER: 0,
+        BRONZE: 0,
+        IRON: 0,
+        UNRANK: 0,
+      },
       totalLevel: 0,
       mostLovedChampion: {},
       updateDate: Timestamp.fromDate(new Date()),
@@ -166,6 +181,7 @@ export default class LeagueOfLegendsStore {
           level: 0,
           surveyList: {},
           tierNumeric: 0,
+          flexTierNumeric: 0,
           updateDate: Timestamp.fromDate(new Date()),
         } as FS_LeagueOfLegendsStat);
       }
@@ -224,6 +240,8 @@ export default class LeagueOfLegendsStore {
         chart = doc.data() as FS_LeagueOfLegendsChart;
 
       chart.tierCnt[getLeagueOfLegendsTier(stat.tierNumeric)] += 1;
+      chart.flexTierCnt[getLeagueOfLegendsTier(stat.flexTierNumeric)] += 1;
+
       stat.champions.forEach((champ) => {
         if (!chart.mostLovedChampion[champ.championId]) {
           chart.mostLovedChampion[champ.championId] = 0;
@@ -236,6 +254,7 @@ export default class LeagueOfLegendsStore {
         mostLovedChampion: { ...chart.mostLovedChampion },
         participantCnt: chart.participantCnt + 1,
         tierCnt: { ...chart.tierCnt },
+        flexTierCnt: { ...chart.flexTierCnt },
         totalLevel: chart.totalLevel + stat.level,
         updateDate: Timestamp.fromDate(new Date()),
       } as FS_LeagueOfLegendsChart);

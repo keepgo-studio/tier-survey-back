@@ -137,7 +137,6 @@ export const joinSurvey = onCORSRequest(async (req, res) => {
     res.status(404).send("Cannot find participant stat information");
     return;
   }
-
   
   const results = await Promise.allSettled([
       store.setChart("league of legends", hostHashedId, stat),
@@ -199,10 +198,19 @@ export const saveStat = onCORSRequest(async (req, res) => {
     const { requestLeagueV4 } = API["league of legends"];
     const data = await requestLeagueV4(user.id);
 
-    const tierNumeric = data.length > 0 ? getLeagueOfLegendsNumericTier(data[0].tier, data[0].rank) : 0;
+    let tierNumeric = 0, flexTierNumeric = 0;
+    
+    data.forEach(info => {
+      if (info.queueType === 'RANKED_SOLO_5x5') {
+        tierNumeric = getLeagueOfLegendsNumericTier(info.tier, info.rank);
+      } else if (info.queueType === 'RANKED_FLEX_SR') {
+        flexTierNumeric = getLeagueOfLegendsNumericTier(info.tier, info.rank);
+      }
+    });
 
     await store.setStat("league of legends", hashedId, {
-      tierNumeric
+      tierNumeric,
+      flexTierNumeric
     });
   } else if (apiType === 'CHAMPION-MASTERY-V4') {
     const { requestChampionMasteryV4 } = API["league of legends"];
