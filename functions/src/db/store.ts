@@ -111,6 +111,16 @@ export default class Store {
     }
   }
 
+  async checkStatExist(game: SupportGame, hashedId: string) {
+    const surveyRef = this.db
+      .collection(generateCollectionUrl(game, "survey"))
+      .doc(hashedId);
+
+    const doc = await surveyRef.get();
+
+    return doc.exists;
+  }
+
   async setStat<T extends SupportGame>(
     game: T,
     hashedId: string,

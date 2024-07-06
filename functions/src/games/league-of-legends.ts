@@ -113,6 +113,28 @@ export const checkSurvey = onCORSRequest(async (req, res) => {
 });
 
 
+export const checkStatExist = onCORSRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const { hashedId } = params;
+
+  const data = {
+    exist: false
+  };
+
+  try {
+    data.exist = await store.checkStatExist("league of legends", hashedId as string);
+  } catch {}
+
+  res.status(200).send(data);
+});
+
+
 export const joinSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
