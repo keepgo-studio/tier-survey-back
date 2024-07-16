@@ -33,6 +33,6 @@ type FS_User = {
  */
 type FS_Survey = {
   password: string;
+  startTime: number;
   limitMinute: number;
-  endTime: number;
 };

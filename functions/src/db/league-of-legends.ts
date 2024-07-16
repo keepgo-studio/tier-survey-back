@@ -41,7 +41,10 @@ export type FS_LeagueOfLegendsStat = {
   champions: LeagueOfLegendsChampion[];
   surveyList: Record<RSOHashedPUUId, Timestamp>; // 참여한 설문 리스트들
   updateDate: Timestamp;
-  geo: { latitude: number; longitude: number } | null;
+  geo: { 
+    latitude: number; 
+    longitude: number; 
+  } | null;
 };
 
 /**

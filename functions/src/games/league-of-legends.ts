@@ -22,7 +22,11 @@ export const writeUser = onRequest(async (req, res) => {
     return;
   }
 
-  await store.writeUser("league of legends", hashedId, user);
+  try {
+    await store.writeUser("league of legends", hashedId, user);
+  } catch {
+    throw new Error("error while writing user");
+  }
 
   res.status(200).send("Write User Success");
 });
@@ -54,21 +58,43 @@ export const createSurvey = onCORSRequest(async (req, res) => {
     await store.setSurvey("league of legends", hashedId, {
       password: password as string,
       limitMinute: Number(limitMinute),
-      endTime: Date.now() + Number(limitMinute) * 60 * 1000,
+      startTime: Date.now(),
     });
   } catch {
-    res.status(500).send("Something error while creating new survey");
-    return;
+    throw new Error("Something error while creating new survey");
   }
 
   try {
     await store.resetChartAndPlayerTable("league of legends", hashedId);
   } catch {
-    res.status(500).send("Something error while setting chart table");
-    return;
+    throw new Error("Something error while setting chart table");
   }
 
   res.status(200).send("Create Success");
+});
+
+
+export const cancelSurvey = onCORSRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+  
+  const { hashedId } = params;
+
+  try {
+    await store.setSurvey("league of legends", hashedId as string, {
+      startTime: 0,
+      limitMinute: 0,
+      password: ""
+    });
+  } catch {
+    throw new Error("error while fixing survey");
+  }
+
+  res.status(200).send("Cancel Success");
 });
 
 
@@ -76,11 +102,9 @@ type CheckSurveyResponse = {
   status: "open" | "closed" | "undefined";
   data: {
     limitMinute: number;
-    endTime: number;
+    startTime: number;
   } | undefined;
 };
-
-
 export const checkSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
@@ -98,11 +122,13 @@ export const checkSurvey = onCORSRequest(async (req, res) => {
         };
 
   if (data) {
-    if (data.endTime > Date.now()) {
+    const endTime = data.startTime + data.limitMinute * 60 * 1000;
+
+    if (endTime > Date.now()) {
       resData.status = "open";
       resData.data = {
         limitMinute: data.limitMinute,
-        endTime: data.endTime,
+        startTime: data.startTime,
       };
     } else {
       resData.status = "closed";
@@ -127,9 +153,7 @@ export const checkStatExist = onCORSRequest(async (req, res) => {
     exist: false
   };
 
-  try {
-    data.exist = await store.checkStatExist("league of legends", hashedId as string);
-  } catch {}
+  data.exist = await store.checkStatExist("league of legends", hashedId as string);
 
   res.status(200).send(data);
 });
@@ -214,56 +238,60 @@ export const saveStat = onCORSRequest(async (req, res) => {
     return;
   }
 
-  await store.initStat("league of legends", hashedId);
-
-  if (apiType === 'LEAGUE-V4') {
-    const { requestLeagueV4 } = API["league of legends"];
-    const data = await requestLeagueV4(user.id);
-
-    let tierNumeric = 0, flexTierNumeric = 0;
-    
-    data.forEach(info => {
-      if (info.queueType === 'RANKED_SOLO_5x5') {
-        tierNumeric = getLeagueOfLegendsNumericTier(info.tier, info.rank);
-      } else if (info.queueType === 'RANKED_FLEX_SR') {
-        flexTierNumeric = getLeagueOfLegendsNumericTier(info.tier, info.rank);
-      }
-    });
-
-    await store.setStat("league of legends", hashedId, {
-      tierNumeric,
-      flexTierNumeric
-    });
-  } else if (apiType === 'CHAMPION-MASTERY-V4') {
-    const { requestChampionMasteryV4 } = API["league of legends"];
-    const data = await requestChampionMasteryV4(user.puuid);
-
-    const champions: LeagueOfLegendsChampion[] = data.map(({ championId, championLevel, championPoints}) => ({
-      championId,
-      championLevel,
-      championPoints
-    }));
-
-    await store.setStat("league of legends", hashedId, {
-      champions
-    });
-  } else if (apiType === 'SUMMONER-V4') {
-    const { requestSummonerV4 } = API["league of legends"];
-    const data = await requestSummonerV4(user.puuid);
-
-    await Promise.allSettled([
-      store.setStat("league of legends", hashedId, {
-        level: data ? data.summonerLevel : 0,
-        updateDate: Timestamp.fromDate(new Date()),
-        surveyList: {
-          [hostHashedId]: Timestamp.fromDate(new Date())
+  try {
+    await store.initStat("league of legends", hashedId);
+  
+    if (apiType === 'LEAGUE-V4') {
+      const { requestLeagueV4 } = API["league of legends"];
+      const data = await requestLeagueV4(user.id);
+  
+      let tierNumeric = 0, flexTierNumeric = 0;
+      
+      data.forEach(info => {
+        if (info.queueType === 'RANKED_SOLO_5x5') {
+          tierNumeric = getLeagueOfLegendsNumericTier(info.tier, info.rank);
+        } else if (info.queueType === 'RANKED_FLEX_SR') {
+          flexTierNumeric = getLeagueOfLegendsNumericTier(info.tier, info.rank);
         }
-      }),
-      store.writeUser("league of legends", hashedId, { ...data })
-    ]);
-  }
+      });
+  
+      await store.setStat("league of legends", hashedId, {
+        tierNumeric,
+        flexTierNumeric
+      });
+    } else if (apiType === 'CHAMPION-MASTERY-V4') {
+      const { requestChampionMasteryV4 } = API["league of legends"];
+      const data = await requestChampionMasteryV4(user.puuid);
+  
+      const champions: LeagueOfLegendsChampion[] = data.map(({ championId, championLevel, championPoints}) => ({
+        championId,
+        championLevel,
+        championPoints
+      }));
+  
+      await store.setStat("league of legends", hashedId, {
+        champions
+      });
+    } else if (apiType === 'SUMMONER-V4') {
+      const { requestSummonerV4 } = API["league of legends"];
+      const data = await requestSummonerV4(user.puuid);
+  
+      await Promise.allSettled([
+        store.setStat("league of legends", hashedId, {
+          level: data ? data.summonerLevel : 0,
+          updateDate: Timestamp.fromDate(new Date()),
+          surveyList: {
+            [hostHashedId]: Timestamp.fromDate(new Date())
+          }
+        }),
+        store.writeUser("league of legends", hashedId, { ...data })
+      ]);
+    }
 
-  res.status(200).send("done");
+    res.status(200).send("done");
+  } catch {
+    throw new Error("Error while requesting API or saving data to Firestore");
+  }
 });
 
 
@@ -300,7 +328,7 @@ export const getStat = onCORSRequest(async (req, res) => {
 
   if (!paramCheck(["hashedId"], params)) {
     res.status(400).send("Wrong parameter");
-    return;
+    return; 
   }
 
   const hashedId = params.hashedId as string;
@@ -312,11 +340,14 @@ export const getStat = onCORSRequest(async (req, res) => {
     return;
   }
 
-  const { tierNumeric, champions } = stat;
+  const { tierNumeric, champions, flexTierNumeric, level, updateDate } = stat;
   
   res.status(200).send({
-    tierNumeric,
-    champions
+    tierNumeric, 
+    champions, 
+    flexTierNumeric, 
+    level, 
+    updateTime: updateDate.toMillis()
   });
 });
 
