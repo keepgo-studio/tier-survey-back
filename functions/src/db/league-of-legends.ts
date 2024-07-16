@@ -91,7 +91,7 @@ export default class LeagueOfLegendsStore {
         puuid: "",
         gameName: "",
         accountId: "",
-        profileIconId: 1452,
+        profileIconId: -1,
         revisionDate: 0,
         summonerLevel: 0,
         hashedId,
