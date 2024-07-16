@@ -47,7 +47,7 @@ export async function requestLeagueV4(encryptedSummonerId: string): Promise<Arra
     .catch(() => []);
 }
 
-export async function requestSummonerV4(encryptedPUUID: string): Promise<{
+export type SummonerDTO = {
   id: string;
   accountId: string;
   puuid: string;
@@ -55,7 +55,9 @@ export async function requestSummonerV4(encryptedPUUID: string): Promise<{
   profileIconId: number;
   revisionDate: number;
   summonerLevel: number;
-} | undefined> {
+}
+
+export async function requestSummonerV4(encryptedPUUID: string): Promise<SummonerDTO | undefined> {
   return await rsoFetch(`https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${encryptedPUUID}`)
     .then(res => res.json())
     .catch(() => undefined);

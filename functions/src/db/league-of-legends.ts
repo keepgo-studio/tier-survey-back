@@ -6,30 +6,25 @@ import {
   generateCollectionUrl,
 } from "./store";
 import { getLeagueOfLegendsTier } from "../utils";
+import type { SummonerDTO } from "../api/league-of-legends";
 
 // firestore collections - league of legends related
 /**
  * ## users
  * - collection: leagueOfLegends-users
- * - id: {@link RSOHashedId}
+ * - id: {@link RSOHashedPUUId}
  * - desc: RSO 후 가장 먼저 등록되는 데이터
- *  받아온 id 를 hashed하여 이를 collection의 primary key로 사용하였다.
+ *  받아온 puuid 를 hashed하여 이를 collection의 primary key로 사용하였다.
+ *  RSO 유저 정보와 SUMMONER-V4 api를 사용하여 user 정보 업데이트
  */
-export type FS_LeagueOfLegendsUser = {
-  id: string;
-  accountId: string;
-  puuid: string;
-  name: string;
-  profileIconId: number;
-  revisionDate: number;
-  summonerLevel: number;
-  hashedId: RSOHashedPUUId;
+export type FS_LeagueOfLegendsUser = RSOUser & SummonerDTO & {
+  hashedId: string;
 };
 
 /**
  * ## league of legends stat
  * - collection: leagueOfLegends-stat
- * - id: {@link RSOHashedId}
+ * - id: {@link RSOHashedPUUId}
  * - desc: 유저가 권한을 승인함으로써 내놓은 정보들
  *  여기에 모두 저장완료하면 chart, player-table(티어 기준으로)에 저장
  *  네이버 로그인 여부와 상관없이 RSO후 저장해야함
@@ -50,7 +45,7 @@ export type FS_LeagueOfLegendsStat = {
 /**
  * ## league of legends chart
  * - collection: leagueOfLegends-chart
- * - id: {@link RSOHashedId}
+ * - id: {@link RSOHashedPUUId}
  * - desc: **종합한 정보들**을 기록한 데이터
  *  transaction read를 사용하여 항상 최신값을 받아오게
  */
@@ -66,7 +61,7 @@ export type FS_LeagueOfLegendsChart = {
 /**
  * ## league of legends player table
  * - collection: leagueOfLegends-player-table
- * - id: {@link RSOHashedId}
+ * - id: {@link RSOHashedPUUId}
  * - desc: 티어순으로 저장하는 유저 테이블, row는 {@link FS_LeagueOfLegendsStat}.
  *  최대 100명까지 저장
  *  firestore에 있는 함수, query의 orderBy, startAt, in연산자를 이용해 조회
@@ -93,13 +88,15 @@ export default class LeagueOfLegendsStore {
     } else {
       const initData: FS_LeagueOfLegendsUser = {
         id: "",
-        accountId: "",
-        puuid: "",
         name: "",
+        puuid: "",
+        gameName: "",
+        accountId: "",
         profileIconId: 1452,
         revisionDate: 0,
         summonerLevel: 0,
         hashedId,
+        tagLine: "",
         ...data,
       };
 

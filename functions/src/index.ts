@@ -1,5 +1,5 @@
 import Store from './db/store';
-import * as game1 from './games/league-of-legends';
+import * as game1 from './endpoints/league-of-legends';
 import { initializeApp } from "firebase-admin/app";
 
 initializeApp();
