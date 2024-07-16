@@ -88,7 +88,6 @@ export default class LeagueOfLegendsStore {
     } else {
       const initData: FS_LeagueOfLegendsUser = {
         id: "",
-        name: "",
         puuid: "",
         gameName: "",
         accountId: "",

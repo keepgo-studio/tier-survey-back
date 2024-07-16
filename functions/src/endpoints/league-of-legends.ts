@@ -312,12 +312,12 @@ export const getUser = onCORSRequest(async (req, res) => {
     return;
   }
 
-  const { name, profileIconId, summonerLevel } = user;
+  const { gameName, profileIconId, summonerLevel } = user;
   
   res.status(200).send({
-    name,
+    gameName,
     profileIconId,
-    level: summonerLevel,
+    summonerLevel,
   });
 });
 
