@@ -368,9 +368,16 @@ export const getChart = onCORSRequest(async (req, res) => {
     res.status(404).send("Cannot found chart");
     return;
   }
+  
+  const mostLovedChampionTop10 = Object.entries(chart.mostLovedChampion)
+    .sort(([, a], [, b]) => b - a);
 
   res.status(200).send({
-    ...chart,
-    updateDate: chart.updateDate.toDate()
+    participantCnt: chart.participantCnt,
+    tierCnt: chart.tierCnt,
+    flexTierCnt: chart.flexTierCnt,
+    totalLevel: chart.totalLevel,
+    mostLovedChampionTop10,
+    updateDate: chart.updateDate.toMillis()
   });
 });
