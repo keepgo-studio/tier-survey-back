@@ -1,6 +1,7 @@
 import { Firestore, Timestamp } from "firebase-admin/firestore";
 import {
   type ChartParam,
+  type PlayerTableParam,
   type StatParam,
   type UserParam,
   generateCollectionUrl,
@@ -68,8 +69,16 @@ export type FS_LeagueOfLegendsChart = {
  */
 export type FS_LeagueOfLegendsPlayerTable = Record<
   RSOHashedPUUId,
-  LeagueOfLegendsChampionTierNumeric
+  FS_LeagueOfLegendsPlayerTableItem
 >;
+
+export type FS_LeagueOfLegendsPlayerTableItem = {
+  tierNumeric: LeagueOfLegendsChampionTierNumeric;
+  flexTierNumeric: LeagueOfLegendsChampionTierNumeric;
+  level: number;
+  gameName: string;
+  tagLine: string;
+}
 
 export default class LeagueOfLegendsStore {
   static async writeUser(
@@ -264,7 +273,7 @@ export default class LeagueOfLegendsStore {
     db: Firestore,
     hostHashedId: string,
     hashedId: string,
-    tierNumeric: number
+    param: PlayerTableParam["league of legends"]
   ) {
     const playerTableRef = db
       .collection(generateCollectionUrl("league of legends", "player-table"))
@@ -272,7 +281,7 @@ export default class LeagueOfLegendsStore {
 
     await db.runTransaction(async (t) => {
       t.update(playerTableRef, {
-        [hashedId]: tierNumeric,
+        [hashedId]: { ...param },
       });
     });
   }

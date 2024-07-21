@@ -55,7 +55,7 @@ export const createSurvey = onCORSRequest(async (req, res) => {
   }
 
   try {
-    await store.setSurvey("league of legends", hashedId, {
+    await store.writeSurvey("league of legends", hashedId, {
       password: password as string,
       limitMinute: Number(limitMinute),
       startTime: Date.now(),
@@ -85,16 +85,33 @@ export const cancelSurvey = onCORSRequest(async (req, res) => {
   const { hashedId } = params;
 
   try {
-    await store.setSurvey("league of legends", hashedId as string, {
-      startTime: 0,
-      limitMinute: 0,
-      password: ""
+    await store.writeSurvey("league of legends", hashedId as string, {
+      limitMinute: 0
     });
   } catch {
     throw new Error("error while fixing survey");
   }
 
   res.status(200).send("Cancel Success");
+});
+
+
+export const getSurvey = onCORSRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+  
+  const { hashedId } = params;
+
+  try {
+    const chart = await store.getSurvey("league of legends", hashedId as string);
+    res.status(200).send(chart);
+  } catch {
+    throw new Error("error while fixing survey");
+  }
 });
 
 
@@ -159,6 +176,41 @@ export const checkStatExist = onCORSRequest(async (req, res) => {
 });
 
 
+export const checkSurveyPassword = onCORSRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hostHashedId", "password"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hostHashedId = params.hostHashedId as string,
+        password = params.password as string;
+
+  const hostSurvey = await store.getSurvey("league of legends", hostHashedId);
+
+  if (!hostSurvey) {
+    res.status(404).send("Cannot find survey");
+    return;
+  }
+
+  const endTime = hostSurvey.startTime + hostSurvey.limitMinute * 60 * 1000;
+
+  if (endTime < Date.now()) {
+    // closed
+    res.status(200).send({ state: "closed"});
+    return;
+  }
+
+  if (password !== hostSurvey.password) {
+    res.status(403).send({ state: "wrong"});
+    return;
+  } 
+  
+  res.status(200).send({ state: "correct"});
+});
+
+
 export const joinSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
@@ -170,23 +222,30 @@ export const joinSurvey = onCORSRequest(async (req, res) => {
   const hashedId = params.hashedId as string,
         hostHashedId = params.hostHashedId as string;
 
-  const hostSurvey = await store.getSurvey("league of legends", hostHashedId);
-
-  if (!hostSurvey) {
-    res.status(404).send("Cannot find survey");
-    return;
-  }
-
-  const stat = await store.getStat("league of legends", hashedId);
+  const [stat, user] = await Promise.all([
+    store.getStat("league of legends", hashedId),
+    store.getUser("league of legends", hashedId)
+  ]);
 
   if (!stat) {
     res.status(404).send("Cannot find participant stat information");
     return;
   }
-  
+
+  if (!user) {
+    res.status(404).send("Cannot find user");
+    return;
+  }
+
   const results = await Promise.allSettled([
       store.setChart("league of legends", hostHashedId, stat),
-      store.setPlayerTable("league of legends", hostHashedId, hashedId, stat.tierNumeric)
+      store.setPlayerTable("league of legends", hostHashedId, hashedId, {
+        tierNumeric: stat.tierNumeric,
+        flexTierNumeric: stat.flexTierNumeric,
+        gameName: user.gameName,
+        tagLine: user.tagLine,
+        level: user.summonerLevel,
+      })
     ]);
   
   if (results.some(r => r.status === "rejected")) {
@@ -381,3 +440,24 @@ export const getChart = onCORSRequest(async (req, res) => {
     updateDate: chart.updateDate.toMillis()
   });
 });
+
+
+export const getPlayerTable = onCORSRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hashedId = params.hashedId as string;
+
+  const playerTable = await store.getPlayerTable("league of legends", hashedId);
+
+  if (!playerTable) {
+    res.status(404).send("Cannot found player table");
+    return;
+  }
+
+  res.status(200).send(playerTable);
+})

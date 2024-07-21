@@ -3,6 +3,8 @@ import { toCamelCase } from "../utils";
 import LeagueOfLegendsStore, {
   type FS_LeagueOfLegendsUser,
   type FS_LeagueOfLegendsStat,
+  type FS_LeagueOfLegendsPlayerTable,
+  FS_LeagueOfLegendsPlayerTableItem,
 } from "./league-of-legends";
 
 export type UserParam = {
@@ -11,15 +13,11 @@ export type UserParam = {
   valorant: {};
 };
 
-type UserParamMap<T extends SupportGame> = UserParam[T];
-
 export type StatParam = {
   "league of legends": Partial<FS_LeagueOfLegendsStat>;
   "teamfight tactics": {};
   valorant: {};
 };
-
-type StatParamMap<T extends SupportGame> = StatParam[T];
 
 type StatReturn = {
   "league of legends": FS_LeagueOfLegendsStat;
@@ -27,15 +25,23 @@ type StatReturn = {
   valorant: {};
 };
 
-type StatReturnMap<T extends SupportGame> = StatReturn[T];
-
 export type ChartParam = {
   "league of legends": FS_LeagueOfLegendsStat;
   "teamfight tactics": {};
   valorant: {};
 };
 
-type ChartParamMap<T extends SupportGame> = ChartParam[T];
+export type PlayerTableParam = {
+  "league of legends": FS_LeagueOfLegendsPlayerTableItem;
+  "teamfight tactics": {};
+  valorant: {};
+};
+
+type PlayerTableReturn = {
+  "league of legends": FS_LeagueOfLegendsPlayerTable;
+  "teamfight tactics": {};
+  valorant: {};
+}
 
 type FS_SupportGameCollectionType =
   | "users"
@@ -59,12 +65,12 @@ export default class Store {
     this.db = getFirestore();
   }
 
-  async setSurvey(game: SupportGame, hashedId: string, data: FS_Survey) {
+  async writeSurvey(game: SupportGame, hashedId: string, data: Partial<FS_Survey>) {
     const surveyRef = this.db
       .collection(generateCollectionUrl(game, "survey"))
       .doc(hashedId);
 
-    await surveyRef.set(data);
+    await surveyRef.update(data);
   }
 
   async getSurvey(game: SupportGame, hashedId: string) {
@@ -84,7 +90,7 @@ export default class Store {
   async writeUser<T extends SupportGame>(
     game: T,
     hashedId: string,
-    data: UserParamMap<T>
+    data: UserParam[T]
   ) {
     if (game === "league of legends") {
       await LeagueOfLegendsStore.writeUser(this.db, hashedId, data);
@@ -124,7 +130,7 @@ export default class Store {
   async setStat<T extends SupportGame>(
     game: T,
     hashedId: string,
-    data: StatParamMap<T>
+    data: StatParam[T]
   ) {
     if (game === "league of legends") {
       await LeagueOfLegendsStore.setStat(this.db, hashedId, data);
@@ -134,7 +140,7 @@ export default class Store {
   async getStat<T extends SupportGame>(
     game: T,
     hashedId: string
-  ): Promise<StatReturnMap<T> | undefined> {
+  ): Promise<StatReturn[T] | undefined> {
     if (game === "league of legends") {
       return await LeagueOfLegendsStore.getStat(this.db, hashedId);
     }
@@ -142,20 +148,34 @@ export default class Store {
     return undefined;
   }
 
-  async setPlayerTable(
-    game: SupportGame,
+  async setPlayerTable<T extends SupportGame>(
+    game: T,
     hostHashedId: string,
     hashedId: string,
-    tierNumeric: number
+    param: PlayerTableParam[T]
   ) {
     if (game === "league of legends") {
       await LeagueOfLegendsStore.writeToPlayerTable(
         this.db,
         hostHashedId,
         hashedId,
-        tierNumeric
+        param as PlayerTableParam["league of legends"]
       );
     }
+  }
+
+  async getPlayerTable<T extends SupportGame>(game: T, hashedId: string,): Promise<PlayerTableReturn[T] | undefined> {
+    const surveyRef = this.db
+      .collection(generateCollectionUrl(game, "player-table"))
+      .doc(hashedId);
+
+    const doc = await surveyRef.get();
+
+    if (doc.exists) {
+      return doc.data() as PlayerTableReturn[T];
+    }
+
+    return undefined;
   }
 
   async checkPlayerTable(
@@ -183,7 +203,7 @@ export default class Store {
   async setChart<T extends SupportGame>(
     game: T,
     hostHashedId: string,
-    param: ChartParamMap<T>
+    param: ChartParam[T]
   ) {
     if (game === "league of legends") {
       await LeagueOfLegendsStore.setChartWithStat(
