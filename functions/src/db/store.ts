@@ -3,7 +3,6 @@ import { toCamelCase } from "../utils";
 import LeagueOfLegendsStore, {
   type FS_LeagueOfLegendsUser,
   type FS_LeagueOfLegendsStat,
-  type FS_LeagueOfLegendsPlayerTable,
   FS_LeagueOfLegendsPlayerTableItem,
 } from "./league-of-legends";
 
@@ -38,7 +37,7 @@ export type PlayerTableParam = {
 };
 
 type PlayerTableReturn = {
-  "league of legends": FS_LeagueOfLegendsPlayerTable;
+  "league of legends": { solo: FS_LeagueOfLegendsPlayerTableItem[], flex: FS_LeagueOfLegendsPlayerTableItem[] };
   "teamfight tactics": {};
   valorant: {};
 }
@@ -63,6 +62,14 @@ export default class Store {
 
   constructor() {
     this.db = getFirestore();
+  }
+
+  async setSurvey(game: SupportGame, hashedId: string, data: FS_Survey) {
+    const surveyRef = this.db
+      .collection(generateCollectionUrl(game, "survey"))
+      .doc(hashedId);
+
+    await surveyRef.set(data);
   }
 
   async writeSurvey(game: SupportGame, hashedId: string, data: Partial<FS_Survey>) {
@@ -164,15 +171,9 @@ export default class Store {
     }
   }
 
-  async getPlayerTable<T extends SupportGame>(game: T, hashedId: string,): Promise<PlayerTableReturn[T] | undefined> {
-    const surveyRef = this.db
-      .collection(generateCollectionUrl(game, "player-table"))
-      .doc(hashedId);
-
-    const doc = await surveyRef.get();
-
-    if (doc.exists) {
-      return doc.data() as PlayerTableReturn[T];
+  async getTop100PlayerTable<T extends SupportGame>(game: T, hashedId: string): Promise<PlayerTableReturn[T] | undefined> {
+    if (game === "league of legends") {
+      return await LeagueOfLegendsStore.getTop100PlayerTable(this.db, hashedId);
     }
 
     return undefined;
@@ -217,6 +218,14 @@ export default class Store {
   async getChart(game: SupportGame, hostHashedId: string) {
     if (game === "league of legends") {
       return await LeagueOfLegendsStore.getChart(this.db, hostHashedId);
+    }
+
+    return undefined;
+  }
+
+  async getMyRanking(game: SupportGame, hostHashedId: string, hashedId: string) { 
+    if (game === "league of legends") {
+      return await LeagueOfLegendsStore.getMyRanking(this.db, hostHashedId, hashedId);
     }
 
     return undefined;

@@ -55,7 +55,7 @@ export const createSurvey = onCORSRequest(async (req, res) => {
   }
 
   try {
-    await store.writeSurvey("league of legends", hashedId, {
+    await store.setSurvey("league of legends", hashedId, {
       password: password as string,
       limitMinute: Number(limitMinute),
       startTime: Date.now(),
@@ -245,6 +245,7 @@ export const joinSurvey = onCORSRequest(async (req, res) => {
         gameName: user.gameName,
         tagLine: user.tagLine,
         level: user.summonerLevel,
+        profileIconId: user.profileIconId
       })
     ]);
   
@@ -429,7 +430,7 @@ export const getChart = onCORSRequest(async (req, res) => {
   }
   
   const mostLovedChampionTop10 = Object.entries(chart.mostLovedChampion)
-    .sort(([, a], [, b]) => b - a);
+    .sort(([, a], [, b]) => b - a).slice(0, 10);
 
   res.status(200).send({
     participantCnt: chart.participantCnt,
@@ -442,7 +443,7 @@ export const getChart = onCORSRequest(async (req, res) => {
 });
 
 
-export const getPlayerTable = onCORSRequest(async (req, res) => {
+export const getTop100PlayerTable = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["hashedId"], params)) {
@@ -452,7 +453,7 @@ export const getPlayerTable = onCORSRequest(async (req, res) => {
 
   const hashedId = params.hashedId as string;
 
-  const playerTable = await store.getPlayerTable("league of legends", hashedId);
+  const playerTable = await store.getTop100PlayerTable("league of legends", hashedId);
 
   if (!playerTable) {
     res.status(404).send("Cannot found player table");
@@ -460,4 +461,20 @@ export const getPlayerTable = onCORSRequest(async (req, res) => {
   }
 
   res.status(200).send(playerTable);
+})
+
+export const getMyRanking = onCORSRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId", "hostHashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hashedId = params.hashedId as string,
+        hostHashedId = params.hostHashedId as string;
+  
+  const rank = (await store.getMyRanking("league of legends", hostHashedId, hashedId))!;
+
+  res.status(200).send(rank);
 })

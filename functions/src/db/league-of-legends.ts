@@ -67,7 +67,7 @@ export type FS_LeagueOfLegendsChart = {
  *  최대 100명까지 저장
  *  firestore에 있는 함수, query의 orderBy, startAt, in연산자를 이용해 조회
  */
-export type FS_LeagueOfLegendsPlayerTable = Record<
+type FS_LeagueOfLegendsPlayerTable = Record<
   RSOHashedPUUId,
   FS_LeagueOfLegendsPlayerTableItem
 >;
@@ -78,6 +78,7 @@ export type FS_LeagueOfLegendsPlayerTableItem = {
   level: number;
   gameName: string;
   tagLine: string;
+  profileIconId: number;
 }
 
 export default class LeagueOfLegendsStore {
@@ -298,5 +299,46 @@ export default class LeagueOfLegendsStore {
     }
 
     return undefined;
+  }
+
+  static async getTop100PlayerTable(db: Firestore, hashedId: string) {
+    const playerTableRef = db
+      .collection(generateCollectionUrl("league of legends", "player-table"))
+      .doc(hashedId);
+
+    const doc = await playerTableRef.get();
+
+    if (doc.exists) {
+      const data = doc.data() as FS_LeagueOfLegendsPlayerTable;
+
+      return {
+        solo: Object.values(data).sort((a, b) => b.tierNumeric - a.tierNumeric).slice(0, 100).filter(item => item.tierNumeric > 0),
+        flex: Object.values(data).sort((a, b) => b.flexTierNumeric - a.flexTierNumeric).slice(0, 100).filter(item => item.flexTierNumeric > 0),
+      };
+    }
+
+    return undefined;
+  }
+
+  static async getMyRanking(db: Firestore, hostHashedId: string, hashedId: string) {
+    const playerTableRef = db
+    .collection(generateCollectionUrl("league of legends", "player-table"))
+    .doc(hostHashedId);
+
+    const doc = await playerTableRef.get();
+
+    if (doc.exists) {
+      const data = doc.data() as FS_LeagueOfLegendsPlayerTable;
+
+      if (hashedId in data) {
+        return {
+          solo: Object.entries(data).sort(([, a], [, b]) => b.tierNumeric - a.tierNumeric).findIndex(([id]) => id === hashedId),
+          flex: Object.entries(data).sort(([, a], [, b]) => b.flexTierNumeric - a.flexTierNumeric).findIndex(([id]) => id === hashedId),
+          info: data[hashedId]
+        };
+      }
+    }
+
+    return { solo: -1, flex: -1 };
   }
 }
