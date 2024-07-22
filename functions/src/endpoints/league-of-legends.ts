@@ -8,9 +8,8 @@ import {
   paramCheck,
 } from "../utils";
 
-
 export const writeUser = onRequest(async (req, res) => {
-  if (req.method !== 'POST') {
+  if (req.method !== "POST") {
     res.status(403).send("Only POST allowed");
     return;
   }
@@ -30,7 +29,6 @@ export const writeUser = onRequest(async (req, res) => {
 
   res.status(200).send("Write User Success");
 });
-
 
 export const createSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -73,7 +71,6 @@ export const createSurvey = onCORSRequest(async (req, res) => {
   res.status(200).send("Create Success");
 });
 
-
 export const cancelSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
@@ -81,12 +78,12 @@ export const cancelSurvey = onCORSRequest(async (req, res) => {
     res.status(400).send("Wrong parameter");
     return;
   }
-  
+
   const { hashedId } = params;
 
   try {
     await store.writeSurvey("league of legends", hashedId as string, {
-      limitMinute: 0
+      limitMinute: 0,
     });
   } catch {
     throw new Error("error while fixing survey");
@@ -95,7 +92,6 @@ export const cancelSurvey = onCORSRequest(async (req, res) => {
   res.status(200).send("Cancel Success");
 });
 
-
 export const getSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
 
@@ -103,24 +99,28 @@ export const getSurvey = onCORSRequest(async (req, res) => {
     res.status(400).send("Wrong parameter");
     return;
   }
-  
+
   const { hashedId } = params;
 
   try {
-    const chart = await store.getSurvey("league of legends", hashedId as string);
+    const chart = await store.getSurvey(
+      "league of legends",
+      hashedId as string
+    );
     res.status(200).send(chart);
   } catch {
     throw new Error("error while fixing survey");
   }
 });
 
-
 type CheckSurveyResponse = {
   status: "open" | "closed" | "undefined";
-  data: {
-    limitMinute: number;
-    startTime: number;
-  } | undefined;
+  data:
+    | {
+        limitMinute: number;
+        startTime: number;
+      }
+    | undefined;
 };
 export const checkSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -133,10 +133,10 @@ export const checkSurvey = onCORSRequest(async (req, res) => {
   const { hashedId } = params;
 
   const data = await store.getSurvey("league of legends", hashedId as string),
-        resData: CheckSurveyResponse = {
-          status: "undefined",
-          data: undefined,
-        };
+    resData: CheckSurveyResponse = {
+      status: "undefined",
+      data: undefined,
+    };
 
   if (data) {
     const endTime = data.startTime + data.limitMinute * 60 * 1000;
@@ -155,7 +155,6 @@ export const checkSurvey = onCORSRequest(async (req, res) => {
   res.status(200).send(resData);
 });
 
-
 export const checkStatExist = onCORSRequest(async (req, res) => {
   const params = req.query;
 
@@ -167,14 +166,16 @@ export const checkStatExist = onCORSRequest(async (req, res) => {
   const { hashedId } = params;
 
   const data = {
-    exist: false
+    exist: false,
   };
 
-  data.exist = await store.checkStatExist("league of legends", hashedId as string);
+  data.exist = await store.checkStatExist(
+    "league of legends",
+    hashedId as string
+  );
 
   res.status(200).send(data);
 });
-
 
 export const checkSurveyPassword = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -185,7 +186,7 @@ export const checkSurveyPassword = onCORSRequest(async (req, res) => {
   }
 
   const hostHashedId = params.hostHashedId as string,
-        password = params.password as string;
+    password = params.password as string;
 
   const hostSurvey = await store.getSurvey("league of legends", hostHashedId);
 
@@ -198,18 +199,17 @@ export const checkSurveyPassword = onCORSRequest(async (req, res) => {
 
   if (endTime < Date.now()) {
     // closed
-    res.status(200).send({ state: "closed"});
+    res.status(200).send({ state: "closed" });
     return;
   }
 
   if (password !== hostSurvey.password) {
-    res.status(403).send({ state: "wrong"});
+    res.status(403).send({ state: "wrong" });
     return;
-  } 
-  
-  res.status(200).send({ state: "correct"});
-});
+  }
 
+  res.status(200).send({ state: "correct" });
+});
 
 export const joinSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -220,11 +220,11 @@ export const joinSurvey = onCORSRequest(async (req, res) => {
   }
 
   const hashedId = params.hashedId as string,
-        hostHashedId = params.hostHashedId as string;
+    hostHashedId = params.hostHashedId as string;
 
   const [stat, user] = await Promise.all([
     store.getStat("league of legends", hashedId),
-    store.getUser("league of legends", hashedId)
+    store.getUser("league of legends", hashedId),
   ]);
 
   if (!stat) {
@@ -238,25 +238,24 @@ export const joinSurvey = onCORSRequest(async (req, res) => {
   }
 
   const results = await Promise.allSettled([
-      store.setChart("league of legends", hostHashedId, stat),
-      store.setPlayerTable("league of legends", hostHashedId, hashedId, {
-        tierNumeric: stat.tierNumeric,
-        flexTierNumeric: stat.flexTierNumeric,
-        gameName: user.gameName,
-        tagLine: user.tagLine,
-        level: user.summonerLevel,
-        profileIconId: user.profileIconId
-      })
-    ]);
-  
-  if (results.some(r => r.status === "rejected")) {
+    store.setChart("league of legends", hostHashedId, stat),
+    store.setPlayerTable("league of legends", hostHashedId, hashedId, {
+      tierNumeric: stat.tierNumeric,
+      flexTierNumeric: stat.flexTierNumeric,
+      gameName: user.gameName,
+      tagLine: user.tagLine,
+      level: user.summonerLevel,
+      profileIconId: user.profileIconId,
+    }),
+  ]);
+
+  if (results.some((r) => r.status === "rejected")) {
     res.status(400).send("Error while saving to player table and chart");
     return;
   }
 
   res.status(200).send("done");
 });
-
 
 export const checkJoinSurvey = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -267,9 +266,13 @@ export const checkJoinSurvey = onCORSRequest(async (req, res) => {
   }
 
   const hashedId = params.hashedId as string,
-        hostHashedId = params.hostHashedId as string;
+    hostHashedId = params.hostHashedId as string;
 
-  const isExist = await store.checkPlayerTable("league of legends", hostHashedId, hashedId);
+  const isExist = await store.checkPlayerTable(
+    "league of legends",
+    hostHashedId,
+    hashedId
+  );
 
   if (isExist) {
     res.status(200).send(true);
@@ -277,7 +280,6 @@ export const checkJoinSurvey = onCORSRequest(async (req, res) => {
     res.status(200).send(false);
   }
 });
-
 
 export const saveStat = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -288,8 +290,8 @@ export const saveStat = onCORSRequest(async (req, res) => {
   }
 
   const hashedId = params.hashedId as string,
-        hostHashedId = params.hostHashedId as string,
-        apiType = params.apiType as LeaugeOfLegendsApiType;
+    hostHashedId = params.hostHashedId as string,
+    apiType = params.apiType as LeaugeOfLegendsApiType;
 
   const user = await store.getUser("league of legends", hashedId);
 
@@ -300,51 +302,54 @@ export const saveStat = onCORSRequest(async (req, res) => {
 
   try {
     await store.initStat("league of legends", hashedId);
-  
-    if (apiType === 'LEAGUE-V4') {
+
+    if (apiType === "LEAGUE-V4") {
       const { requestLeagueV4 } = API["league of legends"];
       const data = await requestLeagueV4(user.id);
-  
-      let tierNumeric = 0, flexTierNumeric = 0;
-      
-      data.forEach(info => {
-        if (info.queueType === 'RANKED_SOLO_5x5') {
+
+      let tierNumeric = 0,
+        flexTierNumeric = 0;
+
+      data.forEach((info) => {
+        if (info.queueType === "RANKED_SOLO_5x5") {
           tierNumeric = getLeagueOfLegendsNumericTier(info.tier, info.rank);
-        } else if (info.queueType === 'RANKED_FLEX_SR') {
+        } else if (info.queueType === "RANKED_FLEX_SR") {
           flexTierNumeric = getLeagueOfLegendsNumericTier(info.tier, info.rank);
         }
       });
-  
+
       await store.setStat("league of legends", hashedId, {
         tierNumeric,
-        flexTierNumeric
+        flexTierNumeric,
       });
-    } else if (apiType === 'CHAMPION-MASTERY-V4') {
+    } else if (apiType === "CHAMPION-MASTERY-V4") {
       const { requestChampionMasteryV4 } = API["league of legends"];
       const data = await requestChampionMasteryV4(user.puuid);
-  
-      const champions: LeagueOfLegendsChampion[] = data.map(({ championId, championLevel, championPoints}) => ({
-        championId,
-        championLevel,
-        championPoints
-      }));
-  
+
+      const champions: LeagueOfLegendsChampion[] = data.map(
+        ({ championId, championLevel, championPoints }) => ({
+          championId,
+          championLevel,
+          championPoints,
+        })
+      );
+
       await store.setStat("league of legends", hashedId, {
-        champions
+        champions,
       });
-    } else if (apiType === 'SUMMONER-V4') {
+    } else if (apiType === "SUMMONER-V4") {
       const { requestSummonerV4 } = API["league of legends"];
       const data = await requestSummonerV4(user.puuid);
-  
+
       await Promise.allSettled([
         store.setStat("league of legends", hashedId, {
           level: data ? data.summonerLevel : 0,
           updateDate: Timestamp.fromDate(new Date()),
           surveyList: {
-            [hostHashedId]: Timestamp.fromDate(new Date())
-          }
+            [hostHashedId]: Timestamp.fromDate(new Date()),
+          },
         }),
-        store.writeUser("league of legends", hashedId, { ...data })
+        store.writeUser("league of legends", hashedId, { ...data }),
       ]);
     }
 
@@ -353,7 +358,6 @@ export const saveStat = onCORSRequest(async (req, res) => {
     throw new Error("Error while requesting API or saving data to Firestore");
   }
 });
-
 
 export const getUser = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -373,7 +377,7 @@ export const getUser = onCORSRequest(async (req, res) => {
   }
 
   const { gameName, profileIconId, summonerLevel } = user;
-  
+
   res.status(200).send({
     gameName,
     profileIconId,
@@ -381,14 +385,12 @@ export const getUser = onCORSRequest(async (req, res) => {
   });
 });
 
-
-
 export const getStat = onCORSRequest(async (req, res) => {
   const params = req.query;
 
   if (!paramCheck(["hashedId"], params)) {
     res.status(400).send("Wrong parameter");
-    return; 
+    return;
   }
 
   const hashedId = params.hashedId as string;
@@ -401,16 +403,15 @@ export const getStat = onCORSRequest(async (req, res) => {
   }
 
   const { tierNumeric, champions, flexTierNumeric, level, updateDate } = stat;
-  
+
   res.status(200).send({
-    tierNumeric, 
-    champions, 
-    flexTierNumeric, 
-    level, 
-    updateTime: updateDate.toMillis()
+    tierNumeric,
+    champions,
+    flexTierNumeric,
+    level,
+    updateTime: updateDate.toMillis(),
   });
 });
-
 
 export const getChart = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -428,9 +429,10 @@ export const getChart = onCORSRequest(async (req, res) => {
     res.status(404).send("Cannot found chart");
     return;
   }
-  
+
   const mostLovedChampionTop10 = Object.entries(chart.mostLovedChampion)
-    .sort(([, a], [, b]) => b - a).slice(0, 10);
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10);
 
   res.status(200).send({
     participantCnt: chart.participantCnt,
@@ -438,10 +440,9 @@ export const getChart = onCORSRequest(async (req, res) => {
     flexTierCnt: chart.flexTierCnt,
     totalLevel: chart.totalLevel,
     mostLovedChampionTop10,
-    updateDate: chart.updateDate.toMillis()
+    updateDate: chart.updateDate.toMillis(),
   });
 });
-
 
 export const getTop100PlayerTable = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -453,7 +454,10 @@ export const getTop100PlayerTable = onCORSRequest(async (req, res) => {
 
   const hashedId = params.hashedId as string;
 
-  const playerTable = await store.getTop100PlayerTable("league of legends", hashedId);
+  const playerTable = await store.getTop100PlayerTable(
+    "league of legends",
+    hashedId
+  );
 
   if (!playerTable) {
     res.status(404).send("Cannot found player table");
@@ -461,7 +465,7 @@ export const getTop100PlayerTable = onCORSRequest(async (req, res) => {
   }
 
   res.status(200).send(playerTable);
-})
+});
 
 export const getMyRanking = onCORSRequest(async (req, res) => {
   const params = req.query;
@@ -472,9 +476,39 @@ export const getMyRanking = onCORSRequest(async (req, res) => {
   }
 
   const hashedId = params.hashedId as string,
-        hostHashedId = params.hostHashedId as string;
-  
-  const rank = (await store.getMyRanking("league of legends", hostHashedId, hashedId))!;
+    hostHashedId = params.hostHashedId as string;
+
+  const rank = (await store.getMyRanking(
+    "league of legends",
+    hostHashedId,
+    hashedId
+  ))!;
 
   res.status(200).send(rank);
-})
+});
+
+export const getJoinedSurvey = onCORSRequest(async (req, res) => {
+  const params = req.query;
+
+  if (!paramCheck(["hashedId"], params)) {
+    res.status(400).send("Wrong parameter");
+    return;
+  }
+
+  const hashedId = params.hashedId as string;
+
+  const stat = await store.getStat("league of legends", hashedId);
+
+  if (!stat) {
+    res.status(404).send("Cannot found user");
+    return;
+  }
+
+  const { surveyList } = stat;
+
+  res
+    .status(200)
+    .send(
+      Object.entries(surveyList).map(([id, timestamp]) => ({ id: id, time: timestamp.toMillis() }))
+    );
+});
