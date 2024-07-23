@@ -171,6 +171,14 @@ export default class Store {
     }
   }
 
+  async getPlayerTable(game: SupportGame, hashedId: string) {
+    if (game === "league of legends") {
+      return await LeagueOfLegendsStore.getPlayerTable(this.db, hashedId);
+    }
+
+    return undefined;
+  }
+
   async getTop100PlayerTable<T extends SupportGame>(game: T, hashedId: string): Promise<PlayerTableReturn[T] | undefined> {
     if (game === "league of legends") {
       return await LeagueOfLegendsStore.getTop100PlayerTable(this.db, hashedId);

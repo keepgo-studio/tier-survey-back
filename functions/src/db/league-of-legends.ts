@@ -320,6 +320,22 @@ export default class LeagueOfLegendsStore {
     return undefined;
   }
 
+  static async getPlayerTable(db: Firestore, hashedId: string) {
+    const playerTableRef = db
+      .collection(generateCollectionUrl("league of legends", "player-table"))
+      .doc(hashedId);
+
+    const doc = await playerTableRef.get();
+
+    if (doc.exists) {
+      const data = doc.data() as FS_LeagueOfLegendsPlayerTable;
+
+      return data;
+    }
+
+    return {};
+  }
+
   static async getMyRanking(db: Firestore, hostHashedId: string, hashedId: string) {
     const playerTableRef = db
     .collection(generateCollectionUrl("league of legends", "player-table"))
@@ -339,6 +355,6 @@ export default class LeagueOfLegendsStore {
       }
     }
 
-    return { solo: -1, flex: -1 };
+    return { solo: -1, flex: -1, info: null };
   }
 }

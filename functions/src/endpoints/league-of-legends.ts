@@ -385,32 +385,30 @@ export const getUser = onCORSRequest(async (req, res) => {
   });
 });
 
-export const getStat = onCORSRequest(async (req, res) => {
+export const getMyInfoFromPlayerTable = onCORSRequest(async (req, res) => {
   const params = req.query;
 
-  if (!paramCheck(["hashedId"], params)) {
+  if (!paramCheck(["hashedId", "hostHashedId"], params)) {
     res.status(400).send("Wrong parameter");
     return;
   }
 
-  const hashedId = params.hashedId as string;
+  const hashedId = params.hashedId as string,
+        hostHashedId = params.hostHashedId as string;
 
-  const stat = await store.getStat("league of legends", hashedId);
+  const playerTable = await store.getPlayerTable("league of legends", hostHashedId);
 
-  if (!stat) {
+  if (!playerTable) {
     res.status(404).send("Cannot found user");
     return;
   }
 
-  const { tierNumeric, champions, flexTierNumeric, level, updateDate } = stat;
+  if (hashedId in playerTable) {
+    res.status(200).send(playerTable[hashedId]);
+    return;
+  }
 
-  res.status(200).send({
-    tierNumeric,
-    champions,
-    flexTierNumeric,
-    level,
-    updateTime: updateDate.toMillis(),
-  });
+  res.status(404).send(undefined);
 });
 
 export const getChart = onCORSRequest(async (req, res) => {
@@ -476,7 +474,7 @@ export const getMyRanking = onCORSRequest(async (req, res) => {
   }
 
   const hashedId = params.hashedId as string,
-    hostHashedId = params.hostHashedId as string;
+        hostHashedId = params.hostHashedId as string;
 
   const rank = (await store.getMyRanking(
     "league of legends",
