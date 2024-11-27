@@ -333,7 +333,7 @@ export default class LeagueOfLegendsStore {
       return data;
     }
 
-    return {};
+    return undefined;
   }
 
   static async getMyRanking(db: Firestore, hostHashedId: string, hashedId: string) {
